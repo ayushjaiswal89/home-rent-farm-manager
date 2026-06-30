@@ -111,15 +111,15 @@ function KpiBox({ label, value, bar, barPct, trend, green }: {
   trend?: string; green?: boolean;
 }) {
   return (
-    <div className="bg-[#1a2236] rounded-xl p-4 border border-white/8">
-      <div className="text-[#94a3b8] text-xs mb-1">{label}</div>
-      <div className={`text-xl font-bold font-mono ${green ? "text-green-400" : "text-[#f1f5f9]"}`}>{value}</div>
+    <div className="bg-[var(--sk-card2)] rounded-xl p-4 border border-[var(--sk-border)]">
+      <div className="text-[var(--sk-muted)] text-xs mb-1">{label}</div>
+      <div className={`text-xl font-bold font-mono ${green ? "text-green-400" : "text-[var(--sk-text)]"}`}>{value}</div>
       {bar && (
         <div className="mt-2 bg-white/10 rounded-full h-1.5">
           <div className="bg-green-400 h-1.5 rounded-full transition-all" style={{ width: `${Math.min(barPct || 0, 100)}%` }} />
         </div>
       )}
-      {trend && <div className="text-xs text-[#64748b] mt-1">{trend}</div>}
+      {trend && <div className="text-xs text-[var(--sk-faint)] mt-1">{trend}</div>}
     </div>
   );
 }
@@ -140,28 +140,28 @@ function SectionHeader({ title, sub }: { title: string; sub: string }) {
   return (
     <div className="mb-5">
       <h2 className="text-xl font-bold text-white">{title}</h2>
-      <p className="text-[#64748b] text-sm mt-0.5">{sub}</p>
+      <p className="text-[var(--sk-faint)] text-sm mt-0.5">{sub}</p>
     </div>
   );
 }
 
 function FormCard({ children }: { children: React.ReactNode }) {
-  return <div className="bg-[#111827] rounded-2xl p-5 border border-white/8">{children}</div>;
+  return <div className="bg-[var(--sk-card)] rounded-2xl p-5 border border-[var(--sk-border)]">{children}</div>;
 }
 
 function InputGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs text-[#94a3b8] font-semibold">{label}</label>
+      <label className="text-xs text-[var(--sk-muted)] font-semibold">{label}</label>
       {children}
     </div>
   );
 }
 
-const inputCls = "bg-[#1a2236] border border-white/10 rounded-lg px-3 py-2 text-[#f1f5f9] text-sm outline-none focus:border-green-400/60 transition-colors w-full";
+const inputCls = "bg-[var(--sk-card2)] border border-[var(--sk-border2)] rounded-lg px-3 py-2 text-[var(--sk-text)] text-sm outline-none focus:border-green-400/60 transition-colors w-full placeholder:text-[var(--sk-dim)]";
 const selectCls = inputCls;
 const btnPrimary = "bg-green-500 hover:bg-green-400 text-[#0f1221] font-bold px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-1.5";
-const btnSecondary = "bg-white/8 hover:bg-white/15 text-[#94a3b8] font-semibold px-4 py-2 rounded-lg text-sm transition-colors border border-white/10 flex items-center gap-1.5";
+const btnSecondary = "bg-[var(--sk-hover)] hover:bg-[var(--sk-hover2)] text-[var(--sk-muted)] font-semibold px-4 py-2 rounded-lg text-sm transition-colors border border-[var(--sk-border2)] flex items-center gap-1.5";
 
 // ─── Home Section ─────────────────────────────────────────────────────────────
 
@@ -237,7 +237,7 @@ function HomeSection({ records, setRecords }: {
           <FormCard>
             <div className="flex gap-2 mb-3 flex-wrap">
               <div className="flex-1 relative min-w-[150px]">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sk-faint)]" />
                 <input className={inputCls + " pl-8"} placeholder="खोजें (कैटेगरी/विवरण)" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
               <button className={btnSecondary + " text-xs"} onClick={() => downloadCSV(
@@ -255,7 +255,7 @@ function HomeSection({ records, setRecords }: {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/8 text-[#64748b] text-xs">
+                  <tr className="border-b border-[var(--sk-border)] text-[var(--sk-faint)] text-xs">
                     <th className="text-left py-2 pr-3 font-semibold">तारीख</th>
                     <th className="text-left py-2 pr-3 font-semibold">कैटेगरी</th>
                     <th className="text-left py-2 pr-3 font-semibold">विवरण</th>
@@ -266,16 +266,16 @@ function HomeSection({ records, setRecords }: {
                 <tbody>
                   {filtered.map(r => (
                     <tr key={r.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
-                      <td className="py-2.5 pr-3 text-[#64748b] text-xs font-mono">{r.date.split("-").reverse().join("/")}</td>
-                      <td className="py-2.5 pr-3 text-[#94a3b8] text-xs">{r.category}</td>
-                      <td className="py-2.5 pr-3 text-[#e2e8f0] text-xs max-w-[120px] truncate">{r.note}</td>
+                      <td className="py-2.5 pr-3 text-[var(--sk-faint)] text-xs font-mono">{r.date.split("-").reverse().join("/")}</td>
+                      <td className="py-2.5 pr-3 text-[var(--sk-muted)] text-xs">{r.category}</td>
+                      <td className="py-2.5 pr-3 text-[var(--sk-text2)] text-xs max-w-[120px] truncate">{r.note}</td>
                       <td className="py-2.5 pr-3 text-right font-bold font-mono text-red-400 text-xs">{fmt(r.amount)}</td>
                       <td className="py-2.5 text-center">
-                        <button onClick={() => del(r.id)} className="text-[#475569] hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
+                        <button onClick={() => del(r.id)} className="text-[var(--sk-dim)] hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={5} className="text-center py-6 text-[#475569] text-xs">कोई रिकॉर्ड नहीं</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={5} className="text-center py-6 text-[var(--sk-dim)] text-xs">कोई रिकॉर्ड नहीं</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -321,18 +321,18 @@ function DashboardSection({ home, rent, farm }: {
         <div className="bg-gradient-to-br from-green-500/20 to-green-600/10 border border-green-400/20 rounded-2xl p-4">
           <div className="text-green-400 text-xs font-semibold mb-1">💰 Net Balance</div>
           <div className={`text-2xl font-bold font-mono ${netBalance >= 0 ? "text-green-400" : "text-red-400"}`}>{fmt(Math.abs(netBalance))}</div>
-          <div className="text-[#64748b] text-xs mt-1">{netBalance >= 0 ? "Profit" : "Loss"}</div>
+          <div className="text-[var(--sk-faint)] text-xs mt-1">{netBalance >= 0 ? "Profit" : "Loss"}</div>
         </div>
-        <div className="bg-[#1a2236] border border-white/8 rounded-2xl p-4">
-          <div className="text-[#94a3b8] text-xs mb-1">🏠 Home Expense</div>
+        <div className="bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-2xl p-4">
+          <div className="text-[var(--sk-muted)] text-xs mb-1">🏠 Home Expense</div>
           <div className="text-2xl font-bold font-mono text-red-400">{fmt(homeTotal)}</div>
         </div>
-        <div className="bg-[#1a2236] border border-white/8 rounded-2xl p-4">
-          <div className="text-[#94a3b8] text-xs mb-1">🏢 Rent Income</div>
+        <div className="bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-2xl p-4">
+          <div className="text-[var(--sk-muted)] text-xs mb-1">🏢 Rent Income</div>
           <div className="text-2xl font-bold font-mono text-blue-400">{fmt(rentTotal)}</div>
         </div>
-        <div className="bg-[#1a2236] border border-white/8 rounded-2xl p-4">
-          <div className="text-[#94a3b8] text-xs mb-1">🌾 Farm Profit</div>
+        <div className="bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-2xl p-4">
+          <div className="text-[var(--sk-muted)] text-xs mb-1">🌾 Farm Profit</div>
           <div className={`text-2xl font-bold font-mono ${farmProfit >= 0 ? "text-teal-400" : "text-red-400"}`}>{fmt(farmProfit)}</div>
         </div>
       </div>
@@ -345,8 +345,8 @@ function DashboardSection({ home, rent, farm }: {
             {recentAll.map((r, i) => (
               <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                 <div>
-                  <div className="text-[#e2e8f0] text-xs font-semibold">{r.label}</div>
-                  <div className="text-[#475569] text-xs">{r.detail} · {r.date.split("-").reverse().join("/")}</div>
+                  <div className="text-[var(--sk-text2)] text-xs font-semibold">{r.label}</div>
+                  <div className="text-[var(--sk-dim)] text-xs">{r.detail} · {r.date.split("-").reverse().join("/")}</div>
                 </div>
                 <span className={`font-bold font-mono text-sm ${r.amount >= 0 ? "text-green-400" : "text-red-400"}`}>
                   {r.amount >= 0 ? "+" : ""}{fmt(Math.abs(r.amount))}
@@ -362,12 +362,12 @@ function DashboardSection({ home, rent, farm }: {
             <AlertCircle size={14} className="text-amber-400" />Pending Rent Alert
           </div>
           {pending.length === 0 ? (
-            <div className="text-center py-4 text-[#475569] text-xs">सभी किराये प्राप्त हो गए ✅</div>
+            <div className="text-center py-4 text-[var(--sk-dim)] text-xs">सभी किराये प्राप्त हो गए ✅</div>
           ) : pending.map(r => (
             <div key={r.id} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
               <div>
-                <div className="text-[#e2e8f0] text-sm font-semibold">{r.tenant}</div>
-                <div className="text-[#475569] text-xs">{r.month} · {r.note}</div>
+                <div className="text-[var(--sk-text2)] text-sm font-semibold">{r.tenant}</div>
+                <div className="text-[var(--sk-dim)] text-xs">{r.month} · {r.note}</div>
               </div>
               <div className="text-right">
                 <div className="text-amber-400 font-bold font-mono text-sm">{fmt(r.total)}</div>
@@ -385,7 +385,7 @@ function DashboardSection({ home, rent, farm }: {
           {Object.entries(cropMap).map(([crop, d]) => (
             <div key={crop} className="mb-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[#94a3b8] text-xs">{crop}</span>
+                <span className="text-[var(--sk-muted)] text-xs">{crop}</span>
                 <span className={`text-xs font-bold font-mono ${d.sale - d.expense >= 0 ? "text-green-400" : "text-red-400"}`}>
                   {d.sale - d.expense >= 0 ? "+" : ""}{fmt(d.sale - d.expense)}
                 </span>
@@ -417,10 +417,10 @@ function DashboardSection({ home, rent, farm }: {
                   <stop offset="95%" stopColor="#4ade80" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--sk-grid)" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v / 1000}K`} width={36} />
-              <Tooltip contentStyle={{ background: "#1a2236", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 11 }} labelStyle={{ color: "#94a3b8" }} formatter={(v: number) => [fmt(v), ""]} />
+              <Tooltip contentStyle={{ background: "var(--sk-card2)", border: "1px solid var(--sk-border2)", borderRadius: 10, fontSize: 11 }} labelStyle={{ color: "var(--sk-muted)" }} formatter={(v: number) => [fmt(v), ""]} />
               <Area type="monotone" dataKey="rent" stroke="#60a5fa" fill="url(#gRent)" strokeWidth={2} dot={false} />
               <Area type="monotone" dataKey="farm" stroke="#4ade80" fill="url(#gFarm)" strokeWidth={2} dot={false} />
               <Area type="monotone" dataKey="home" stroke="#f87171" fill="none" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
@@ -428,7 +428,7 @@ function DashboardSection({ home, rent, farm }: {
           </ResponsiveContainer>
           <div className="flex gap-4 justify-center mt-1">
             {[["#60a5fa","Rent"],["#4ade80","Farm"],["#f87171","Home"]].map(([c,l]) => (
-              <div key={l} className="flex items-center gap-1 text-xs text-[#64748b]">
+              <div key={l} className="flex items-center gap-1 text-xs text-[var(--sk-faint)]">
                 <span className="w-3 h-0.5 rounded inline-block" style={{ background: c }} />{l}
               </div>
             ))}
@@ -534,14 +534,14 @@ function RentSection({ records, setRecords }: {
             </div>
 
             {/* Auto-calc display */}
-            <div className="bg-[#0f1221] rounded-xl p-3 border border-white/8 text-xs space-y-1">
-              <div className="flex justify-between text-[#94a3b8]">
+            <div className="bg-[var(--sk-bg)] rounded-xl p-3 border border-[var(--sk-border)] text-xs space-y-1">
+              <div className="flex justify-between text-[var(--sk-muted)]">
                 <span>यूनिट (ऑटो)</span><span className="font-mono text-white">{units.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-[#94a3b8]">
+              <div className="flex justify-between text-[var(--sk-muted)]">
                 <span>बिजली बिल (ऑटो)</span><span className="font-mono text-white">{fmt(lightBill)}</span>
               </div>
-              <div className="flex justify-between border-t border-white/8 pt-1 mt-1">
+              <div className="flex justify-between border-t border-[var(--sk-border)] pt-1 mt-1">
                 <span className="font-semibold text-white">कुल (किराया + बिल)</span>
                 <span className="font-bold font-mono text-green-400">{fmt(totalCalc)}</span>
               </div>
@@ -571,7 +571,7 @@ function RentSection({ records, setRecords }: {
           <FormCard>
             <div className="flex gap-2 mb-3 flex-wrap">
               <div className="flex-1 relative min-w-[120px]">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sk-faint)]" />
                 <input className={inputCls + " pl-8"} placeholder="टेनेंट/नोट खोजें" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
               <button className={btnSecondary + " text-xs"} onClick={() => downloadCSV(
@@ -595,7 +595,7 @@ function RentSection({ records, setRecords }: {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-white/8 text-[#64748b]">
+                  <tr className="border-b border-[var(--sk-border)] text-[var(--sk-faint)]">
                     {["Date","Tenant","Month","Rent","Units","Light","Total","Status","WA",""].map((h,i) => (
                       <th key={i} className={`py-2 pr-2 font-semibold text-left ${i >= 8 ? "w-6" : ""}`}>{h}</th>
                     ))}
@@ -604,12 +604,12 @@ function RentSection({ records, setRecords }: {
                 <tbody>
                   {filtered.map(r => (
                     <tr key={r.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
-                      <td className="py-2 pr-2 text-[#64748b] font-mono">{r.date.split("-").reverse().join("/")}</td>
-                      <td className="py-2 pr-2 text-[#e2e8f0] font-semibold">{r.tenant}</td>
-                      <td className="py-2 pr-2 text-[#94a3b8]">{r.month}</td>
-                      <td className="py-2 pr-2 font-mono text-[#e2e8f0]">{fmt(r.amount)}</td>
-                      <td className="py-2 pr-2 text-[#94a3b8] font-mono">{r.units}</td>
-                      <td className="py-2 pr-2 text-[#94a3b8] font-mono">{fmt(r.lightBill)}</td>
+                      <td className="py-2 pr-2 text-[var(--sk-faint)] font-mono">{r.date.split("-").reverse().join("/")}</td>
+                      <td className="py-2 pr-2 text-[var(--sk-text2)] font-semibold">{r.tenant}</td>
+                      <td className="py-2 pr-2 text-[var(--sk-muted)]">{r.month}</td>
+                      <td className="py-2 pr-2 font-mono text-[var(--sk-text2)]">{fmt(r.amount)}</td>
+                      <td className="py-2 pr-2 text-[var(--sk-muted)] font-mono">{r.units}</td>
+                      <td className="py-2 pr-2 text-[var(--sk-muted)] font-mono">{fmt(r.lightBill)}</td>
                       <td className="py-2 pr-2 font-bold font-mono text-green-400">{fmt(r.total)}</td>
                       <td className="py-2 pr-2"><StatusBadge status={r.status} /></td>
                       <td className="py-2 pr-2">
@@ -620,11 +620,11 @@ function RentSection({ records, setRecords }: {
                         )}
                       </td>
                       <td className="py-2">
-                        <button onClick={() => del(r.id)} className="text-[#475569] hover:text-red-400"><Trash2 size={12} /></button>
+                        <button onClick={() => del(r.id)} className="text-[var(--sk-dim)] hover:text-red-400"><Trash2 size={12} /></button>
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && <tr><td colSpan={10} className="text-center py-5 text-[#475569]">कोई रिकॉर्ड नहीं</td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={10} className="text-center py-5 text-[var(--sk-dim)]">कोई रिकॉर्ड नहीं</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -685,7 +685,7 @@ function FarmSection({ records, setRecords }: {
       <div className="flex gap-2 mb-4">
         {(["Expense", "Yield", "Sale"] as const).map(t => (
           <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${form.type === t ? "bg-green-500 text-[#0f1221]" : "bg-white/8 text-[#94a3b8] hover:bg-white/15 border border-white/10"}`}>
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${form.type === t ? "bg-green-500 text-[#0f1221]" : "bg-[var(--sk-hover)] text-[var(--sk-muted)] hover:bg-[var(--sk-hover2)] border border-[var(--sk-border2)]"}`}>
             + {t}
           </button>
         ))}
@@ -755,7 +755,7 @@ function FarmSection({ records, setRecords }: {
           {/* Charts */}
           <div className="grid grid-cols-2 gap-3">
             <FormCard>
-              <div className="text-xs text-[#64748b] mb-2">Expense by Category</div>
+              <div className="text-xs text-[var(--sk-faint)] mb-2">Expense by Category</div>
               {pieData.length > 0 ? (
                 <>
                   <ResponsiveContainer width="100%" height={100}>
@@ -763,29 +763,29 @@ function FarmSection({ records, setRecords }: {
                       <Pie data={pieData} cx="50%" cy="50%" innerRadius={28} outerRadius={45} dataKey="value" paddingAngle={2}>
                         {pieData.map((entry, i) => <Cell key={`farm-cell-${entry.name}-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                       </Pie>
-                      <Tooltip formatter={(v: number) => [fmt(v), ""]} contentStyle={{ background: "#1a2236", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 11 }} />
+                      <Tooltip formatter={(v: number) => [fmt(v), ""]} contentStyle={{ background: "var(--sk-card2)", border: "1px solid var(--sk-border2)", borderRadius: 8, fontSize: 11 }} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="space-y-1 mt-1">
                     {pieData.slice(0,3).map((d, i) => (
                       <div key={d.name} className="flex items-center gap-1.5 text-xs">
                         <span className="w-2 h-2 rounded-full" style={{ background: PIE_COLORS[i] }} />
-                        <span className="text-[#94a3b8] flex-1">{d.name}</span>
-                        <span className="font-mono text-[#e2e8f0]">{fmt(d.value)}</span>
+                        <span className="text-[var(--sk-muted)] flex-1">{d.name}</span>
+                        <span className="font-mono text-[var(--sk-text2)]">{fmt(d.value)}</span>
                       </div>
                     ))}
                   </div>
                 </>
-              ) : <div className="text-[#475569] text-xs text-center py-6">कोई डेटा नहीं</div>}
+              ) : <div className="text-[var(--sk-dim)] text-xs text-center py-6">कोई डेटा नहीं</div>}
             </FormCard>
 
             <FormCard>
-              <div className="text-xs text-[#64748b] mb-2">Monthly Trend</div>
+              <div className="text-xs text-[var(--sk-faint)] mb-2">Monthly Trend</div>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={MONTHLY_TREND} barGap={1}>
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#64748b" }} axisLine={false} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip formatter={(v: number) => [fmt(v), ""]} contentStyle={{ background: "#1a2236", border: "none", borderRadius: 8, fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => [fmt(v), ""]} contentStyle={{ background: "var(--sk-card2)", border: "none", borderRadius: 8, fontSize: 11 }} />
                   <Bar dataKey="farm" fill="#4ade80" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -799,7 +799,7 @@ function FarmSection({ records, setRecords }: {
         <FormCard>
           <div className="flex gap-2 mb-3 flex-wrap">
             <div className="flex-1 relative min-w-[120px]">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sk-faint)]" />
               <input className={inputCls + " pl-8"} placeholder="खोजें (फ़सल/नोट)" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
             <select className={selectCls + " w-auto"} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
@@ -820,7 +820,7 @@ function FarmSection({ records, setRecords }: {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-white/8 text-[#64748b]">
+                <tr className="border-b border-[var(--sk-border)] text-[var(--sk-faint)]">
                   {["तारीख","टाइप","फ़सल","Details","राशि","Action"].map(h => (
                     <th key={h} className="py-2 pr-3 text-left font-semibold">{h}</th>
                   ))}
@@ -829,10 +829,10 @@ function FarmSection({ records, setRecords }: {
               <tbody>
                 {filtered.map(r => (
                   <tr key={r.id} className="border-b border-white/5 hover:bg-white/2">
-                    <td className="py-2.5 pr-3 text-[#64748b] font-mono">{r.date.split("-").reverse().join("/")}</td>
+                    <td className="py-2.5 pr-3 text-[var(--sk-faint)] font-mono">{r.date.split("-").reverse().join("/")}</td>
                     <td className="py-2.5 pr-3"><StatusBadge status={r.type} /></td>
-                    <td className="py-2.5 pr-3 text-[#e2e8f0] font-semibold">{r.crop}</td>
-                    <td className="py-2.5 pr-3 text-[#94a3b8] max-w-[150px]">
+                    <td className="py-2.5 pr-3 text-[var(--sk-text2)] font-semibold">{r.crop}</td>
+                    <td className="py-2.5 pr-3 text-[var(--sk-muted)] max-w-[150px]">
                       {r.expenseCategory && <span className="mr-1">{r.expenseCategory} ·</span>}
                       {r.quantity > 0 && <span>{r.quantity} {r.unit} ·</span>} {r.note}
                     </td>
@@ -842,11 +842,11 @@ function FarmSection({ records, setRecords }: {
                       </span>
                     </td>
                     <td className="py-2.5">
-                      <button onClick={() => del(r.id)} className="text-[#475569] hover:text-red-400"><Trash2 size={12} /></button>
+                      <button onClick={() => del(r.id)} className="text-[var(--sk-dim)] hover:text-red-400"><Trash2 size={12} /></button>
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-5 text-[#475569]">कोई रिकॉर्ड नहीं</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-5 text-[var(--sk-dim)]">कोई रिकॉर्ड नहीं</td></tr>}
               </tbody>
             </table>
           </div>
@@ -888,7 +888,7 @@ function ReportsSection({ home, rent, farm }: {
       <div className="flex items-center justify-between mb-5">
         <div className="flex gap-2">
           <button className={btnSecondary + " text-xs"}><RefreshCw size={13} />Refresh</button>
-          <span className="text-[#475569] text-xs self-center">Updated: आज</span>
+          <span className="text-[var(--sk-dim)] text-xs self-center">Updated: आज</span>
         </div>
       </div>
 
@@ -900,8 +900,8 @@ function ReportsSection({ home, rent, farm }: {
           { label: "🌾 Farm", value: fmt(farmProfit), color: farmProfit >= 0 ? "text-teal-400" : "text-red-400" },
           { label: "💰 Net Balance", value: fmt(netBalance), color: netBalance >= 0 ? "text-green-400" : "text-red-400" },
         ].map(s => (
-          <div key={s.label} className="bg-[#1a2236] border border-white/8 rounded-2xl p-4 text-center">
-            <div className="text-[#64748b] text-xs mb-1">{s.label}</div>
+          <div key={s.label} className="bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-2xl p-4 text-center">
+            <div className="text-[var(--sk-faint)] text-xs mb-1">{s.label}</div>
             <div className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</div>
           </div>
         ))}
@@ -913,17 +913,17 @@ function ReportsSection({ home, rent, farm }: {
           <div className="font-semibold text-white text-sm mb-3">मासिक ट्रेंड</div>
           <div className="flex gap-4 mb-2">
             {[["#60a5fa","Rent"],["#4ade80","Farm"],["#f87171","Home"]].map(([c,l]) => (
-              <div key={l} className="flex items-center gap-1.5 text-xs text-[#64748b]">
+              <div key={l} className="flex items-center gap-1.5 text-xs text-[var(--sk-faint)]">
                 <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: c }} />{l}
               </div>
             ))}
           </div>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={MONTHLY_TREND} barGap={1}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--sk-grid)" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v/1000}K`} width={36} />
-              <Tooltip formatter={(v: number) => [fmt(v), ""]} contentStyle={{ background: "#1a2236", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 11 }} />
+              <Tooltip formatter={(v: number) => [fmt(v), ""]} contentStyle={{ background: "var(--sk-card2)", border: "1px solid var(--sk-border2)", borderRadius: 10, fontSize: 11 }} />
               <Bar dataKey="rent" fill="#60a5fa" radius={[3,3,0,0]} />
               <Bar dataKey="farm" fill="#4ade80" radius={[3,3,0,0]} />
               <Bar dataKey="home" fill="#f87171" radius={[3,3,0,0]} />
@@ -941,7 +941,7 @@ function ReportsSection({ home, rent, farm }: {
               { label: "Home Spend", val: -homeTotal, color: "text-red-400" },
             ].map(r => (
               <div key={r.label} className="flex justify-between text-sm border-b border-white/5 pb-2">
-                <span className="text-[#94a3b8]">{r.label}</span>
+                <span className="text-[var(--sk-muted)]">{r.label}</span>
                 <span className={`font-bold font-mono ${r.color}`}>{fmt(r.val)}</span>
               </div>
             ))}
@@ -956,10 +956,10 @@ function ReportsSection({ home, rent, farm }: {
                 <Cell key="cell-farm" fill="#4ade80" />
                 <Cell key="cell-rent" fill="#60a5fa" />
               </Pie>
-              <Tooltip formatter={(v: number) => [`${v}%`, ""]} contentStyle={{ background: "#1a2236", border: "none", borderRadius: 8, fontSize: 11 }} />
+              <Tooltip formatter={(v: number) => [`${v}%`, ""]} contentStyle={{ background: "var(--sk-card2)", border: "none", borderRadius: 8, fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="flex gap-4 justify-center mt-1 text-xs text-[#64748b]">
+          <div className="flex gap-4 justify-center mt-1 text-xs text-[var(--sk-faint)]">
             <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 inline-block" />Farm {farmPct}%</div>
             <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />Rent {rentPct}%</div>
           </div>
@@ -977,7 +977,7 @@ function ReportsSection({ home, rent, farm }: {
               { label: "💵 Transactions", val: fmtNum(home.length + rent.length + farm.length) },
             ].map(s => (
               <div key={s.label} className="flex justify-between py-2 border-b border-white/5 last:border-0">
-                <span className="text-[#94a3b8] text-sm">{s.label}</span>
+                <span className="text-[var(--sk-muted)] text-sm">{s.label}</span>
                 <strong className="text-white font-mono">{s.val}</strong>
               </div>
             ))}
@@ -988,7 +988,7 @@ function ReportsSection({ home, rent, farm }: {
           <div className="font-semibold text-white text-sm mb-3">Insights</div>
           <ul className="space-y-2.5">
             {insights.map((ins, i) => (
-              <li key={i} className="text-sm text-[#94a3b8] flex items-start gap-2">
+              <li key={i} className="text-sm text-[var(--sk-muted)] flex items-start gap-2">
                 <span className="mt-0.5 w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0 mt-1.5" />
                 {ins}
               </li>
@@ -1041,7 +1041,7 @@ function BackupSection({ home, rent, farm }: {
           value={text}
           onChange={e => setText(e.target.value)}
         />
-        <p className="text-[#64748b] text-xs mt-2">⚠️ Import करने पर मौजूदा डेटा बदल सकता है। पहले Export ले लें।</p>
+        <p className="text-[var(--sk-faint)] text-xs mt-2">⚠️ Import करने पर मौजूदा डेटा बदल सकता है। पहले Export ले लें।</p>
       </FormCard>
     </div>
   );
@@ -1054,7 +1054,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
     <button
       type="button"
       onClick={onChange}
-      className={`w-12 h-6 rounded-full relative transition-colors duration-200 flex-shrink-0 ${checked ? "bg-green-500" : "bg-white/20"}`}
+      className={`w-12 h-6 rounded-full relative transition-colors duration-200 flex-shrink-0 ${checked ? "bg-green-500" : "bg-[var(--sk-card2)] border border-[var(--sk-border2)]"}`}
     >
       <span
         className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
@@ -1115,29 +1115,29 @@ function SettingsSection({ darkMode, setDarkMode }: { darkMode: boolean; setDark
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[#e2e8f0] text-sm font-semibold">Dark Mode 🌙</div>
-                <div className="text-[#475569] text-xs">Comfortable night view</div>
+                <div className="text-[var(--sk-text2)] text-sm font-semibold">Dark Mode 🌙</div>
+                <div className="text-[var(--sk-dim)] text-xs">Comfortable night view</div>
               </div>
               <Toggle checked={darkMode} onChange={() => setDarkMode(!darkMode)} />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[#e2e8f0] text-sm font-semibold">Backup Reminder ☁️</div>
-                <div className="text-[#475569] text-xs">Weekly local backup alert</div>
+                <div className="text-[var(--sk-text2)] text-sm font-semibold">Backup Reminder ☁️</div>
+                <div className="text-[var(--sk-dim)] text-xs">Weekly local backup alert</div>
               </div>
               <Toggle checked={backupReminder} onChange={() => setBackupReminder(v => !v)} />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[#e2e8f0] text-sm font-semibold">Notifications 🔔</div>
-                <div className="text-[#475569] text-xs">Rent and expense alerts</div>
+                <div className="text-[var(--sk-text2)] text-sm font-semibold">Notifications 🔔</div>
+                <div className="text-[var(--sk-dim)] text-xs">Rent and expense alerts</div>
               </div>
               <Toggle checked={notifs} onChange={() => setNotifs(v => !v)} />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[#e2e8f0] text-sm font-semibold">Auto CSV Export 📤</div>
-                <div className="text-[#475569] text-xs">Keep monthly export ready</div>
+                <div className="text-[var(--sk-text2)] text-sm font-semibold">Auto CSV Export 📤</div>
+                <div className="text-[var(--sk-dim)] text-xs">Keep monthly export ready</div>
               </div>
               <Toggle checked={exportCsv} onChange={() => setExportCsv(v => !v)} />
             </div>
@@ -1158,7 +1158,7 @@ function SettingsSection({ darkMode, setDarkMode }: { darkMode: boolean; setDark
           </span>
         )}
       </div>
-      <p className="text-[#475569] text-xs mt-3">App version 1.0 • Local save only</p>
+      <p className="text-[var(--sk-dim)] text-xs mt-3">App version 1.0 • Local save only</p>
     </div>
   );
 }
@@ -1188,18 +1188,36 @@ export default function App() {
   const go = (tab: Tab) => { setActiveTab(tab); setDrawerOpen(false); setFabOpen(false); };
 
   return (
-    <div className={darkMode ? "dark" : ""}>
-      <div className="bg-[#0f1221] min-h-screen text-[#f1f5f9] font-['Inter',sans-serif]">
+    <div data-theme={darkMode ? "dark" : "light"}>
+      <style>{`
+        [data-theme="dark"] {
+          --sk-bg: #0f1221; --sk-card: #111827; --sk-card2: #1a2236;
+          --sk-text: #f1f5f9; --sk-text2: #e2e8f0; --sk-muted: #94a3b8;
+          --sk-faint: #64748b; --sk-dim: #475569;
+          --sk-border: rgba(255,255,255,0.08); --sk-border2: rgba(255,255,255,0.12);
+          --sk-hover: rgba(255,255,255,0.06); --sk-hover2: rgba(255,255,255,0.12);
+          --sk-grid: rgba(255,255,255,0.05);
+        }
+        [data-theme="light"] {
+          --sk-bg: #f1f5f9; --sk-card: #ffffff; --sk-card2: #f8fafc;
+          --sk-text: #0f172a; --sk-text2: #1e293b; --sk-muted: #475569;
+          --sk-faint: #64748b; --sk-dim: #94a3b8;
+          --sk-border: rgba(0,0,0,0.08); --sk-border2: rgba(0,0,0,0.12);
+          --sk-hover: rgba(0,0,0,0.04); --sk-hover2: rgba(0,0,0,0.08);
+          --sk-grid: rgba(0,0,0,0.05);
+        }
+      `}</style>
+      <div className="bg-[var(--sk-bg)] min-h-screen text-[var(--sk-text)] font-['Inter',sans-serif]">
 
         {/* Header */}
-        <header className="sticky top-0 z-40 bg-[#0f1221]/95 backdrop-blur border-b border-white/8">
+        <header className="sticky top-0 z-40 bg-[var(--sk-bg)] backdrop-blur border-b border-[var(--sk-border)]">
           <div className="flex items-center justify-between px-4 h-14 max-w-7xl mx-auto">
             {/* Logo */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-[#0f1221] font-black text-sm">SK</div>
               <div>
                 <div className="text-white font-bold text-sm leading-tight">Smart Khaata</div>
-                <div className="text-[#475569] text-xs leading-tight">Home • Rent • Farm</div>
+                <div className="text-[var(--sk-dim)] text-xs leading-tight">Home • Rent • Farm</div>
               </div>
             </div>
 
@@ -1207,7 +1225,7 @@ export default function App() {
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map(n => (
                 <button key={n.id} onClick={() => go(n.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === n.id ? "bg-green-500/20 text-green-400 border border-green-400/30" : "text-[#64748b] hover:text-white hover:bg-white/5"}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === n.id ? "bg-green-500/20 text-green-400 border border-green-400/30" : "text-[var(--sk-faint)] hover:text-white hover:bg-[var(--sk-hover)]"}`}>
                   {n.emoji} {n.label}
                 </button>
               ))}
@@ -1219,10 +1237,10 @@ export default function App() {
                 {isOnline ? <Wifi size={11} /> : <WifiOff size={11} />}
                 {isOnline ? "Online" : "Offline"}
               </div>
-              <button onClick={() => setDarkMode(!darkMode)} className="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center text-[#94a3b8] hover:text-white transition-colors">
+              <button onClick={() => setDarkMode(!darkMode)} className="w-8 h-8 rounded-lg bg-[var(--sk-hover)] flex items-center justify-center text-[var(--sk-muted)] hover:text-white transition-colors">
                 {darkMode ? <Sun size={15} /> : <Moon size={15} />}
               </button>
-              <button onClick={() => setDrawerOpen(true)} className="md:hidden w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center text-[#94a3b8]">
+              <button onClick={() => setDrawerOpen(true)} className="md:hidden w-8 h-8 rounded-lg bg-[var(--sk-hover)] flex items-center justify-center text-[var(--sk-muted)]">
                 <Menu size={16} />
               </button>
             </div>
@@ -1238,15 +1256,15 @@ export default function App() {
         {drawerOpen && (
           <>
             <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
-            <aside className="fixed left-0 top-0 h-full w-72 bg-[#111827] border-r border-white/8 z-50 flex flex-col">
-              <div className="p-5 border-b border-white/8">
+            <aside className="fixed left-0 top-0 h-full w-72 bg-[var(--sk-card)] border-r border-[var(--sk-border)] z-50 flex flex-col">
+              <div className="p-5 border-b border-[var(--sk-border)]">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <div className="text-white font-bold">Smart Khaata</div>
-                    <div className="text-[#475569] text-xs">Home • Rent • Farm</div>
-                    <div className="text-[#334155] text-xs mt-0.5">Local data on device</div>
+                    <div className="text-[var(--sk-dim)] text-xs">Home • Rent • Farm</div>
+                    <div className="text-[var(--sk-dim)] text-xs mt-0.5">Local data on device</div>
                   </div>
-                  <button onClick={() => setDrawerOpen(false)} className="w-7 h-7 bg-white/8 rounded-lg flex items-center justify-center text-[#64748b]"><X size={14} /></button>
+                  <button onClick={() => setDrawerOpen(false)} className="w-7 h-7 bg-[var(--sk-hover)] rounded-lg flex items-center justify-center text-[var(--sk-faint)]"><X size={14} /></button>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {[
@@ -1255,7 +1273,7 @@ export default function App() {
                     { label: "🌾 Crops", val: String(new Set(farmRecords.map(r=>r.crop)).size) },
                   ].map(s => (
                     <div key={s.label} className="bg-white/5 rounded-lg p-2 text-center">
-                      <div className="text-[#64748b] text-xs">{s.label}</div>
+                      <div className="text-[var(--sk-faint)] text-xs">{s.label}</div>
                       <div className="text-white font-bold text-sm font-mono">{s.val}</div>
                     </div>
                   ))}
@@ -1264,20 +1282,20 @@ export default function App() {
               <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
                 {navItems.slice(0, 5).map(n => (
                   <button key={n.id} onClick={() => go(n.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${activeTab === n.id ? "bg-green-500/20 text-green-400" : "text-[#94a3b8] hover:bg-white/5 hover:text-white"}`}>
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${activeTab === n.id ? "bg-green-500/20 text-green-400" : "text-[var(--sk-muted)] hover:bg-[var(--sk-hover)] hover:text-white"}`}>
                     {n.emoji} {n.label}
                   </button>
                 ))}
-                <div className="border-t border-white/8 my-2" />
+                <div className="border-t border-[var(--sk-border)] my-2" />
                 {navItems.slice(5).map(n => (
                   <button key={n.id} onClick={() => go(n.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${activeTab === n.id ? "bg-green-500/20 text-green-400" : "text-[#94a3b8] hover:bg-white/5 hover:text-white"}`}>
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${activeTab === n.id ? "bg-green-500/20 text-green-400" : "text-[var(--sk-muted)] hover:bg-[var(--sk-hover)] hover:text-white"}`}>
                     {n.emoji} {n.label}
                   </button>
                 ))}
               </nav>
-              <div className="p-4 border-t border-white/8">
-                <div className="text-[#334155] text-xs text-center">Smart Khaata v1.0 · Made with ❤️</div>
+              <div className="p-4 border-t border-[var(--sk-border)]">
+                <div className="text-[var(--sk-dim)] text-xs text-center">Smart Khaata v1.0 · Made with ❤️</div>
               </div>
             </aside>
           </>
@@ -1295,11 +1313,11 @@ export default function App() {
         </main>
 
         {/* Bottom Nav (mobile) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#111827] border-t border-white/8 z-30">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--sk-card)] border-t border-[var(--sk-border)] z-30">
           <div className="flex">
             {navItems.slice(0, 5).map(n => (
               <button key={n.id} onClick={() => go(n.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${activeTab === n.id ? "text-green-400" : "text-[#475569]"}`}>
+                className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${activeTab === n.id ? "text-green-400" : "text-[var(--sk-dim)]"}`}>
                 <span className="text-lg leading-none">{n.emoji}</span>
                 <span className="text-xs font-semibold">{n.label}</span>
                 {activeTab === n.id && <div className="w-1 h-1 rounded-full bg-green-400" />}
@@ -1319,7 +1337,7 @@ export default function App() {
                 { label: "📤 Export", tab: "backup" as Tab },
               ].map(a => (
                 <button key={a.label} onClick={() => { go(a.tab); setFabOpen(false); }}
-                  className="bg-[#1a2236] border border-white/15 text-[#e2e8f0] text-sm font-semibold px-4 py-2 rounded-xl shadow-lg whitespace-nowrap">
+                  className="bg-[var(--sk-card2)] border border-white/15 text-[var(--sk-text2)] text-sm font-semibold px-4 py-2 rounded-xl shadow-lg whitespace-nowrap">
                   {a.label}
                 </button>
               ))}
@@ -1332,7 +1350,7 @@ export default function App() {
         </div>
 
         {/* Footer */}
-        <footer className="hidden md:block text-center py-4 text-[#334155] text-xs border-t border-white/5">
+        <footer className="hidden md:block text-center py-4 text-[var(--sk-dim)] text-xs border-t border-white/5">
           Smart Khaata • खर्च, किराया, खेती — सब एक जगह
         </footer>
       </div>
