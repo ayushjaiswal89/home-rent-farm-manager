@@ -1,6 +1,7 @@
 "use client";
-import { useState, useMemo, useCallback, useEffect} from "react";
-import { Home, BarChart2, Building2, Wheat, TrendingUp, HardDrive,
+import { useState, useMemo, useCallback, useEffect } from "react";
+import {
+  Home, BarChart2, Building2, Wheat, TrendingUp, HardDrive,
   Settings, Menu, X, Plus, Wifi, WifiOff, Moon, Sun
 } from "lucide-react";
 import { AppSettings, Tab, FarmRecord, HomeExpense, RentRecord } from "./lib/types";
@@ -8,7 +9,9 @@ import { DEFAULT_SETTINGS } from "./lib/settings";
 import { STRINGS } from "./lib/i18n";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { HomeSection, DashboardSection, RentSection, FarmSection, ReportsSection, BackupSection, SettingsSection } from "./components/sections";
-import { fmt, fmtNum } from "./lib/utils";
+import { fmt } from "./lib/utils";
+import { useRegisterSW } from "virtual:pwa-register/react";
+
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -56,201 +59,334 @@ const MONTHLY_TREND = [
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
-    const [activeTab, setActiveTab] = useState<Tab>("home");
-    const [drawerOpen, setDrawerOpen] = useState(false);
-    const [fabOpen, setFabOpen] = useState(false);
-    const [settings, setSettings] = useLocalStorage<AppSettings>("sk_settings", DEFAULT_SETTINGS);
-    const [homeRecords, setHomeRecords] = useLocalStorage<HomeExpense[]>("sk_home", INIT_HOME);
-    const [rentRecords, setRentRecords] = useLocalStorage<RentRecord[]>("sk_rent", INIT_RENT);
-    const [farmRecords, setFarmRecords] = useLocalStorage<FarmRecord[]>("sk_farm", INIT_FARM);
-    const [isOnline] = useState(true);
+  const [activeTab, setActiveTab] = useState<Tab>("home");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
+  const [settings, setSettings] = useLocalStorage<AppSettings>("sk_settings", DEFAULT_SETTINGS);
+  const [homeRecords, setHomeRecords] = useLocalStorage<HomeExpense[]>("sk_home", INIT_HOME);
+  const [rentRecords, setRentRecords] = useLocalStorage<RentRecord[]>("sk_rent", INIT_RENT);
+  const [farmRecords, setFarmRecords] = useLocalStorage<FarmRecord[]>("sk_farm", INIT_FARM);
+ const [isOnline, setIsOnline] = useState(
+  typeof navigator !== "undefined"
+    ? navigator.onLine
+    : true
+);
 
-    const darkMode = settings.darkMode;
+useEffect(() => {
+  const online = () => setIsOnline(true);
+  const offline = () => setIsOnline(false);
 
-    useEffect(() => {
-  document.documentElement.classList.toggle("dark", settings.darkMode);
-}, [settings.darkMode]);
+  window.addEventListener("online", online);
+  window.addEventListener("offline", offline);
 
-    const navItems = useMemo<NavItem[]>(() => {
-        const nav = STRINGS[settings.lang].nav;
-        return [
-            { id: "home", icon: <Home size={16} />, label: nav.home, emoji: "🏠" },
-            { id: "dashboard", icon: <BarChart2 size={16} />, label: nav.dashboard, emoji: "📊" },
-            { id: "rent", icon: <Building2 size={16} />, label: nav.rent, emoji: "🏢" },
-            { id: "farm", icon: <Wheat size={16} />, label: nav.farm, emoji: "🌾" },
-            { id: "reports", icon: <TrendingUp size={16} />, label: nav.reports, emoji: "📈" },
-            { id: "backup", icon: <HardDrive size={16} />, label: nav.backup, emoji: "🗄️" },
-            { id: "settings", icon: <Settings size={16} />, label: nav.settings, emoji: "⚙️" },
-        ];
-    }, [settings.lang]);
+  return () => {
+    window.removeEventListener("online", online);
+    window.removeEventListener("offline", offline);
+  };
+}, []);
+  const {
+  offlineReady: [offlineReady],
+  needRefresh: [needRefresh],
+  updateServiceWorker,
+} = useRegisterSW();
 
-    const goTo = useCallback((tab: Tab) => {
-        setActiveTab(tab);
-        setDrawerOpen(false);
-        setFabOpen(false);
-    }, []);
+const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-    const renderSection = () => {
-        switch (activeTab) {
-            case "home":
-                return <HomeSection records={homeRecords} setRecords={setHomeRecords} lang={settings.lang} />;
-            case "dashboard":
-                return <DashboardSection home={homeRecords} rent={rentRecords} farm={farmRecords} lang={settings.lang} />;
-            case "rent":
-                return <RentSection records={rentRecords} setRecords={setRentRecords} lang={settings.lang} />;
-            case "farm":
-                return <FarmSection records={farmRecords} setRecords={setFarmRecords} lang={settings.lang} />;
-            case "reports":
-                return <ReportsSection home={homeRecords} rent={rentRecords} farm={farmRecords} lang={settings.lang} />;
-            case "backup":
-                return <BackupSection home={homeRecords} rent={rentRecords} farm={farmRecords} lang={settings.lang} />;
-            case "settings":
-                return <SettingsSection settings={settings} setSettings={setSettings} />;
-            default:
-                return null;
-        }
+useEffect(() => {
+  const handler = (e: any) => {
+    e.preventDefault();
+    setDeferredPrompt(e);
+  };
+
+  window.addEventListener("beforeinstallprompt", handler);
+
+  return () => {
+    window.removeEventListener("beforeinstallprompt", handler);
+  };
+}, []);
+
+  const darkMode = settings.darkMode;
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", settings.darkMode);
+  }, [settings.darkMode]);
+
+  useEffect(() => {
+    const backup = {
+      home: homeRecords,
+      rent: rentRecords,
+      farm: farmRecords,
+      exportedAt: new Date().toISOString(),
     };
 
-  return (
-   
-      <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    localStorage.setItem(
+      "smart-khaata-auto-backup",
+      JSON.stringify(backup)
+    );
+  }, [homeRecords, rentRecords, farmRecords]);
 
-        {/* Header */}
-        <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border">
-          <div className="flex items-center justify-between px-4 h-14 max-w-7xl mx-auto">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-black font-black text-sm">SK</div>
-              <div>
-                <div className="text-foreground font-bold text-sm leading-tight">Smart Khaata</div>
-                <div className="text-muted-foreground text-xs leading-tight">Home • Rent • Farm</div>
+  const navItems = useMemo<NavItem[]>(() => {
+    const nav = STRINGS[settings.lang].nav;
+    return [
+      { id: "home", icon: <Home size={16} />, label: nav.home, emoji: "🏠" },
+      { id: "dashboard", icon: <BarChart2 size={16} />, label: nav.dashboard, emoji: "📊" },
+      { id: "rent", icon: <Building2 size={16} />, label: nav.rent, emoji: "🏢" },
+      { id: "farm", icon: <Wheat size={16} />, label: nav.farm, emoji: "🌾" },
+      { id: "reports", icon: <TrendingUp size={16} />, label: nav.reports, emoji: "📈" },
+      { id: "backup", icon: <HardDrive size={16} />, label: nav.backup, emoji: "🗄️" },
+      { id: "settings", icon: <Settings size={16} />, label: nav.settings, emoji: "⚙️" },
+    ];
+  }, [settings.lang]);
+
+  const goTo = useCallback((tab: Tab) => {
+    setActiveTab(tab);
+    setDrawerOpen(false);
+    setFabOpen(false);
+  }, []);
+
+  const renderSection = () => {
+    switch (activeTab) {
+      case "home":
+        return <HomeSection records={homeRecords} setRecords={setHomeRecords} lang={settings.lang} />;
+      case "dashboard":
+        return <DashboardSection home={homeRecords} rent={rentRecords} farm={farmRecords} lang={settings.lang} />;
+      case "rent":
+        return <RentSection records={rentRecords} setRecords={setRentRecords} lang={settings.lang} />;
+      case "farm":
+        return <FarmSection records={farmRecords} setRecords={setFarmRecords} lang={settings.lang} />;
+      case "reports":
+        return <ReportsSection home={homeRecords} rent={rentRecords} farm={farmRecords} lang={settings.lang} />;
+      case "backup":
+        return (
+          <BackupSection
+            home={homeRecords}
+            rent={rentRecords}
+            farm={farmRecords}
+            lang={settings.lang}
+
+            setHome={setHomeRecords}
+            setRent={setRentRecords}
+            setFarm={setFarmRecords}
+          />
+        );
+      case "settings":
+        return <SettingsSection settings={settings} setSettings={setSettings} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
+        <div className="flex items-center justify-between px-3 sm:px-4 h-14 max-w-7xl mx-auto">
+          {/* Logo */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+           <img
+ src={import.meta.env.BASE_URL + "icons/icon-192.png"}
+  alt="Smart Khaata"
+  width={40}
+  height={40}
+/>
+
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-bold text-foreground truncate">
+                Smart Khaata
+              </h1>
+
+              <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
+                Home • Rent • Farm
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop Tabs */}
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.map(n => (
+              <button key={n.id} onClick={() => goTo(n.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === n.id ? "bg-green-500/20 text-green-400 border border-green-400/30" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}>
+                {n.emoji} {n.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Right Controls */}
+          <div className="flex items-center gap-2">
+            <div className={`hidden md:flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${isOnline ? "bg-green-400/10 text-green-400" : "bg-red-400/10 text-red-400"}`}>
+              {isOnline ? <Wifi size={11} /> : <WifiOff size={11} />}
+              {isOnline ? "Online" : "Offline"}
+            </div>
+            <button onClick={() => setSettings(current => ({ ...current, darkMode: !current.darkMode }))} className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+            
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="md:hidden w-8 h-8 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+        </div>
+
+      </header>
+
+      <div className="bg-green-500/10 border-b border-green-400/15 px-2 sm:px-4 py-2">
+        <p className="text-xs text-green-400/80 text-center max-w-7xl mx-auto">{STRINGS[settings.lang].banner}</p>
+      </div>
+
+      {/* Mobile Drawer */}
+      {drawerOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
+          <aside className="fixed left-0 top-0 z-[60] h-full w-[75vw] max-w-[300px] bg-card border-r border-border shadow-xl">
+            <div className="p-5 border-b border-border">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-foreground font-bold">Smart Khaata</div>
+                  <div className="text-muted-foreground text-xs">Home • Rent • Farm</div>
+                  <div className="text-muted-foreground text-xs mt-0.5">Local data on device</div>
+                </div>
+                <button onClick={() => setDrawerOpen(false)} className="w-7 h-7 border border-border bg-card rounded-lg flex items-center justify-center text-muted-foreground"><X size={14} /></button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { label: "💰 Net Balance", val: fmt(rentRecords.reduce((s, r) => s + r.total, 0) - homeRecords.reduce((s, r) => s + r.amount, 0)) },
+                  { label: "🏢 Tenants", val: String(rentRecords.length) },
+                  { label: "🌾 Crops", val: String(new Set(farmRecords.map(r => r.crop)).size) },
+                ].map(s => (
+                  <div key={s.label} className="bg-card rounded-lg border border-border p-2 text-center">
+                    <div className="text-muted-foreground text-xs">{s.label}</div>
+                    <div className="text-foreground font-bold text-sm font-mono">{s.val}</div>
+                  </div>
+                ))}
               </div>
             </div>
-
-            {/* Desktop Tabs */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navItems.map(n => (
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+              {navItems.slice(0, 5).map(n => (
                 <button key={n.id} onClick={() => goTo(n.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === n.id ? "bg-green-500/20 text-green-400 border border-green-400/30" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}>
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${activeTab === n.id ? "bg-green-500/20 text-green-400" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
+                  {n.emoji} {n.label}
+                </button>
+              ))}
+              <div className="border-t border-border my-2" />
+              {navItems.slice(5).map(n => (
+                <button key={n.id} onClick={() => goTo(n.id)}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${activeTab === n.id ? "bg-green-500/20 text-green-400" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
                   {n.emoji} {n.label}
                 </button>
               ))}
             </nav>
-
-            {/* Right Controls */}
-            <div className="flex items-center gap-2">
-              <div className={`hidden md:flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${isOnline ? "bg-green-400/10 text-green-400" : "bg-red-400/10 text-red-400"}`}>
-                {isOnline ? <Wifi size={11} /> : <WifiOff size={11} />}
-                {isOnline ? "Online" : "Offline"}
-              </div>
-              <button onClick={() => setSettings(current => ({ ...current, darkMode: !current.darkMode }))} className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                {darkMode ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-              <button onClick={() => setDrawerOpen(true)} className="md:hidden w-8 h-8 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"></button>
+            <div className="p-4 border-t border-border">
+              <div className="text-muted-foreground text-xs text-center">Smart Khaata v1.0 · Made with ❤️</div>
             </div>
-          </div>
-        </header>
+          </aside>
+        </>
+      )}
 
-                <div className="bg-green-500/10 border-b border-green-400/15 px-4 py-2">
-                    <p className="text-xs text-green-400/80 text-center max-w-7xl mx-auto">{STRINGS[settings.lang].banner}</p>
-                </div>
+      <main
+        key={activeTab}
+        className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6 pb-28 md:pb-8 animate-fade"
+      >
+        {renderSection()}
+      </main>
 
-        {/* Mobile Drawer */}
-        {drawerOpen && (
-          <>
-            <div className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
-             <aside className="fixed left-0 top-0 z-[60] h-full w-72 bg-card border-r border-border shadow-xl">
-              <div className="p-5 border-b border-border">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <div className="text-foreground font-bold">Smart Khaata</div>
-                    <div className="text-muted-foreground text-xs">Home • Rent • Farm</div>
-                    <div className="text-muted-foreground text-xs mt-0.5">Local data on device</div>
-                  </div>
-                  <button onClick={() => setDrawerOpen(false)} className="w-7 h-7 border border-border bg-card rounded-lg flex items-center justify-center text-muted-foreground"><X size={14} /></button>
-                </div>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[
-                    { label: "💰 Net Balance", val: fmt(rentRecords.reduce((s,r)=>s+r.total,0) - homeRecords.reduce((s,r)=>s+r.amount,0)) },
-                    { label: "🏢 Tenants", val: String(rentRecords.length) },
-                    { label: "🌾 Crops", val: String(new Set(farmRecords.map(r=>r.crop)).size) },
-                  ].map(s => (
-                    <div key={s.label} className="bg-card rounded-lg border border-border p-2 text-center">
-                      <div className="text-muted-foreground text-xs">{s.label}</div>
-                      <div className="text-foreground font-bold text-sm font-mono">{s.val}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                {navItems.slice(0, 5).map(n => (
-                  <button key={n.id} onClick={() => goTo(n.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${activeTab === n.id ? "bg-green-500/20 text-green-400" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
-                    {n.emoji} {n.label}
-                  </button>
-                ))}
-                <div className="border-t border-border my-2" />
-                {navItems.slice(5).map(n => (
-                  <button key={n.id} onClick={() => goTo(n.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${activeTab === n.id ? "bg-green-500/20 text-green-400" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
-                    {n.emoji} {n.label}
-                  </button>
-                ))}
-              </nav>
-              <div className="p-4 border-t border-border">
-                <div className="text-muted-foreground text-xs text-center">Smart Khaata v1.0 · Made with ❤️</div>
-              </div>
-            </aside>
-          </>
-        )}
+      {/* Floating Install Button */}
+{deferredPrompt && (
+  <div className="fixed bottom-28 right-4 md:bottom-6 md:right-6 z-[100]">
+    <button
+      onClick={async () => {
+        deferredPrompt.prompt();
 
-                <main className="max-w-7xl mx-auto px-4 py-6 pb-28 md:pb-8">
-                    {renderSection()}
-                </main>
+        const { outcome } = await deferredPrompt.userChoice;
 
-        {/* Bottom Nav (mobile) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-          <div className="flex">
-            {navItems.slice(0, 5).map(n => (
-              <button key={n.id} onClick={() => goTo(n.id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${activeTab === n.id ? "text-green-400" : "text-muted-foreground hover:text-foreground"}`}>
-                <span className="text-lg leading-none">{n.emoji}</span>
-                <span className="text-xs font-semibold">{n.label}</span>
-                {activeTab === n.id && <div className="w-1 h-1 rounded-full bg-green-400" />}
+        if (outcome === "accepted") {
+          console.log("App Installed");
+        }
+
+        setDeferredPrompt(null);
+      }}
+      className="flex items-center gap-2 px-4 py-3 rounded-xl
+                 bg-green-600 hover:bg-green-700
+                 text-white font-semibold shadow-2xl
+                 transition-all"
+    >
+      📲 Install App
+    </button>
+  </div>
+)}
+
+      {(offlineReady || needRefresh) && (
+  <div className="fixed bottom-28 md:bottom-6 right-4 z-50 bg-white dark:bg-zinc-900 border rounded-xl shadow-lg p-4 max-w-xs">
+    {offlineReady && (
+      <p className="text-sm mb-3">
+        ✅ App is ready for offline use.
+      </p>
+    )}
+
+    {needRefresh && (
+      <>
+        <p className="text-sm mb-3">
+          New version available.
+        </p>
+
+        <button
+          onClick={() => updateServiceWorker(true)}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg"
+        >
+          Update
+        </button>
+      </>
+    )}
+  </div>
+)}
+
+      {/* Bottom Nav (mobile) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+        <div className="flex">
+          {navItems.slice(0, 5).map(n => (
+            <button key={n.id} onClick={() => goTo(n.id)}
+              className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${activeTab === n.id ? "text-green-400" : "text-muted-foreground hover:text-foreground"}`}>
+              <span className="text-lg leading-none">{n.emoji}</span>
+              <span className="text-[11px] font-semibold">{n.label}</span>
+              {activeTab === n.id && <div className="w-1 h-1 rounded-full bg-green-400" />}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* FAB */}
+      <div className="md:hidden fixed bottom-28 md:bottom-6 right-3 sm:right-4 z-40">
+        {fabOpen && (
+          <div className="absolute bottom-14 right-0 flex flex-col gap-2 items-end">
+            {[
+              { label: "🏠 Home Expense", tab: "home" as Tab },
+              { label: "🏢 Rent Entry", tab: "rent" as Tab },
+              { label: "🌾 Farm Record", tab: "farm" as Tab },
+              { label: "📤 Export", tab: "backup" as Tab },
+            ].map(a => (
+              <button key={a.label} onClick={() => { goTo(a.tab); setFabOpen(false); }}
+                className="bg-card border border-border text-foreground text-sm font-semibold px-4 py-2 rounded-xl shadow-lg whitespace-nowrap">
+                {a.label}
               </button>
             ))}
           </div>
-        </nav>
-
-        {/* FAB */}
-        <div className="md:hidden fixed bottom-20 right-4 z-40">
-          {fabOpen && (
-            <div className="absolute bottom-14 right-0 flex flex-col gap-2 items-end">
-              {[
-                { label: "🏠 Home Expense", tab: "home" as Tab },
-                { label: "🏢 Rent Entry", tab: "rent" as Tab },
-                { label: "🌾 Farm Record", tab: "farm" as Tab },
-                { label: "📤 Export", tab: "backup" as Tab },
-              ].map(a => (
-                <button key={a.label} onClick={() => { goTo(a.tab); setFabOpen(false); }}
-                  className="bg-card border border-border text-foreground text-sm font-semibold px-4 py-2 rounded-xl shadow-lg whitespace-nowrap">
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          )}
-          <button onClick={() => setFabOpen(!fabOpen)}
-            className="w-14 h-14 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center text-black text-2xl font-bold shadow-xl shadow-green-500/30 active:scale-95 transition-transform">
-            {fabOpen ? <X size={22} /> : <Plus size={22} />}
-          </button>
-        </div>
-
-        {/* Footer */}
-        <footer className="hidden md:block text-center py-4 text-muted-foreground text-xs border-t border-border">
-          Smart Khaata • खर्च, किराया, खेती — सब एक जगह
-        </footer>
+        )}
+        <button onClick={() => setFabOpen(!fabOpen)}
+          className="w-14 h-14 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl flex items-center justify-center text-black text-2xl font-bold shadow-xl shadow-green-500/30 active:scale-95 transition-transform">
+          {fabOpen ? <X size={22} /> : <Plus size={22} />}
+        </button>
       </div>
-    
+
+      {/* Footer */}
+      <footer className="hidden md:block text-center py-4 text-muted-foreground text-xs border-t border-border">
+        Smart Khaata • खर्च, किराया, खेती — सब एक जगह
+      </footer>
+    </div>
+
   );
 }
 

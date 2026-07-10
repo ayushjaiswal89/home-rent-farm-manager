@@ -3,15 +3,17 @@ import { ReactNode } from "react";
 export function SectionHeader({ title, sub }: { title: string; sub: string }) {
   return (
     <div className="mb-5">
-      <h2 className="text-xl font-bold ">{title}</h2>
-      <p className="text-[var(--sk-faint)] text-sm mt-0.5">{sub}</p>
+      <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{title}</h2>
+      <p className="text-[var(--sk-faint)] text-xs sm:text-sm">{sub}</p>
     </div>
   );
 }
 
 export function FormCard({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-[var(--sk-card)] rounded-2xl p-5 border border-[var(--sk-border)]">{children}</div>
+    <div className="bg-[var(--sk-card)] rounded-2xl p-5 border border-[var(--sk-border)] overflow-hidden">
+      {children}
+    </div>
   );
 }
 

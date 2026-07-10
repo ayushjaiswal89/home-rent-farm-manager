@@ -53,7 +53,11 @@ export interface AppSettings {
   goalExpense: string;
   goalRent: string;
   lang: "hi" | "en";
-  currency: "INR" | "USD";
+  currency: "INR" | "USD" | "EUR";
+   dateFormat:
+    | "DD/MM/YYYY"
+    | "MM/DD/YYYY"
+    | "YYYY-MM-DD";
   darkMode: boolean;
   notifs: boolean;
   backupReminder: boolean;

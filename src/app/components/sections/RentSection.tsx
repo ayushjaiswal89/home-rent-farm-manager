@@ -44,20 +44,37 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
     note: "",
   });
   const [search, setSearch] = useState("");
+  const [tenantSearch, setTenantSearch] = useState("");
+const [statusFilter, setStatusFilter] = useState("all");
+const [monthFilter, setMonthFilter] = useState("");
 
   const units = useMemo(() => Math.max(0, Number(form.currentReading) - Number(form.prevReading)), [form.currentReading, form.prevReading]);
   const lightBill = useMemo(() => units * Number(form.ratePerUnit), [units, form.ratePerUnit]);
   const totalCalc = useMemo(() => Number(form.amount) + lightBill, [form.amount, lightBill]);
+  const filteredRecords = useMemo(() => {
+  return records.filter((record) => {
 
-  const filteredRecords = useMemo(
-    () => records.filter(record =>
-      record.tenant.toLowerCase().includes(search.toLowerCase()) ||
-      record.note.toLowerCase().includes(search.toLowerCase())
-    ),
-    [records, search]
-  );
+    const searchMatch =
+      record.tenant.toLowerCase().includes(tenantSearch.toLowerCase()) ||
+      record.note.toLowerCase().includes(tenantSearch.toLowerCase());
 
-  const monthTotal = useMemo(() => records.reduce((sum, record) => sum + record.amount, 0), [records]);
+    const statusMatch =
+      statusFilter === "all"
+        ? true
+        : record.status === statusFilter;
+
+    const monthMatch =
+      monthFilter === ""
+        ? true
+        : record.month === monthFilter;
+
+    return searchMatch && statusMatch && monthMatch;
+  });
+}, [records, tenantSearch, statusFilter, monthFilter]);
+
+ 
+
+  const monthTotal = useMemo(() => filteredRecords.reduce((sum, record) => sum + record.amount, 0), [records]);
   const electricTotal = useMemo(() => records.reduce((sum, record) => sum + record.lightBill, 0), [records]);
   const combinedTotal = useMemo(() => records.reduce((sum, record) => sum + record.total, 0), [records]);
   const receivedTotal = useMemo(() => records.filter(record => record.status === "Received").reduce((sum, record) => sum + record.total, 0), [records]);
@@ -129,14 +146,14 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
   }, [filteredRecords, lang]);
 
   return (
-    <div>
+  <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 xl:px-8">
       <SectionHeader title={t.rentTitle} sub={t.rentSub} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
         <FormCard>
           <form onSubmit={addRecord} className="space-y-4">
             <div className="text-xs font-semibold text-[#4ade80] mb-2">{t.tenantDets}</div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <InputGroup label={t.date}>
                 <input type="date" className={inputCls} value={form.date} onChange={e => setForm(current => ({ ...current, date: e.target.value }))} required />
               </InputGroup>
@@ -154,7 +171,8 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
             </div>
 
             <div className="text-xs font-semibold text-[#4ade80] mt-2 mb-1">{t.rentDets}</div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
               <InputGroup label={t.rent}>
                 <input type="number" min="0" className={inputCls} value={form.amount} onChange={e => setForm(current => ({ ...current, amount: e.target.value }))} required />
               </InputGroup>
@@ -168,7 +186,7 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
             </div>
 
             <div className="text-xs font-semibold text-[#4ade80] mt-2 mb-1">{t.elec}</div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <InputGroup label={t.prevReading}>
                 <input type="number" min="0" className={inputCls} value={form.prevReading} onChange={e => setForm(current => ({ ...current, prevReading: e.target.value }))} />
               </InputGroup>
@@ -180,14 +198,14 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
               </InputGroup>
             </div>
 
-            <div className="bg-[var(--sk-bg)] rounded-xl p-3 border border-[var(--sk-border)] text-xs space-y-1">
-              <div className="flex justify-between text-[var(--sk-muted)]">
+            <div className="bg-[var(--sk-bg)] rounded-xl p-3 sm:p-4 border border-[var(--sk-border)] text-xs space-y-1">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-2 border-b border-white/5 pb-2">
                 <span>{t.unitsAuto}</span><span className="font-mono text-[var(--sk-text)]">{units.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-[var(--sk-muted)]">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-2 border-b border-white/5 pb-2">
                 <span>{t.lightAuto}</span><span className="font-mono text-[var(--sk-text)]">{fmt(lightBill)}</span>
               </div>
-              <div className="flex justify-between border-t border-[var(--sk-border)] pt-1 mt-1">
+             <div className="flex flex-col sm:flex-row sm:justify-between gap-2 border-b border-white/5 pb-2">
                 <span className="font-semibold text-[var(--sk-text)]">{t.totalRentBill}</span>
                 <span className="font-bold font-mono text-green-400">{fmt(totalCalc)}</span>
               </div>
@@ -197,15 +215,15 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
               <input type="text" className={inputCls} value={form.note} onChange={e => setForm(current => ({ ...current, note: e.target.value }))} />
             </InputGroup>
 
-            <div className="flex gap-2 flex-wrap">
-              <button type="submit" className={btnPrimary}><Plus size={14} />{t.addIncome}</button>
-              <button type="button" className={btnSecondary} onClick={() => setRecords([])}>{t.clearRent}</button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button type="submit" className={`${btnPrimary} w-full sm:w-auto`}>{t.addIncome}</button>
+              <button type="button" className={`${btnSecondary} w-full sm:w-auto`} onClick={() => setRecords([])}>{t.clearRent}</button>
             </div>
           </form>
         </FormCard>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <KpiBox label={t.monthColl} value={fmt(monthTotal)} />
             <KpiBox label={t.electricTot} value={fmt(electricTotal)} />
             <KpiBox label={t.combined} value={fmt(combinedTotal)} green />
@@ -215,9 +233,40 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
           </div>
 
           <FormCard>
-            <div className="flex gap-2 mb-3 flex-wrap">
+         <div className="grid
+grid-cols-1
+sm:grid-cols-2
+lg:grid-cols-3
+xl:grid-cols-6
+gap-3
+mb-4">
+
+<select
+  className={`${selectCls} w-full`}
+  value={statusFilter}
+  onChange={(e) => setStatusFilter(e.target.value)}
+>
+  <option value="all">All Status</option>
+  <option value="Received">Received</option>
+  <option value="Pending">Pending</option>
+  <option value="Partial">Partial</option>
+</select>
+
+<select
+  className={`${selectCls} w-full`}
+  value={monthFilter}
+  onChange={(e) => setMonthFilter(e.target.value)}
+>
+  <option value="">All Month</option>
+
+  {months.map((m) => (
+    <option key={m} value={m}>
+      {m}
+    </option>
+  ))}
+</select>
               <SearchBar value={search} onChange={setSearch} placeholder={t.searchTenant} />
-              <button type="button" className={btnSecondary + " text-xs"} onClick={() => {
+              <button type="button" className={btnSecondary + " w-full text-xs"} onClick={() => {
                 const headers = [t.date, t.tenant, t.month, t.rent, t.unitsAuto, t.elec, t.totalRentBill, t.status];
                 const rows = filteredRecords.map(record => [record.date, record.tenant, record.month, fmt(record.amount), record.units, fmt(record.lightBill), fmt(record.total), record.status]);
                 const csv = [headers, ...rows].map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\r\n");
@@ -240,8 +289,8 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
               }}><FileText size={13} />PDF</button>
               <button type="button" className={btnSecondary + " text-xs"} onClick={sendReminder}><Bell size={13} />{t.reminder}</button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+            <div className="w-full overflow-x-auto rounded-xl">
+              <table className="min-w-[950px] w-full text-xs">
                 <thead>
                   <tr className="border-b border-[var(--sk-border)] text-[var(--sk-faint)]">
                     {[t.date, t.tenant, t.month, t.rent, t.unitsAuto, t.elec, t.totalRentBill, t.status, t.tableWA, ""].map((heading, index) => (
@@ -252,15 +301,15 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
                 <tbody>
                   {filteredRecords.map(record => (
                     <tr key={record.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
-                      <td className="py-2 pr-2 text-[var(--sk-faint)] font-mono">{record.date.split("-").reverse().join("/")}</td>
-                      <td className="py-2 pr-2 text-[var(--sk-text2)] font-semibold">{record.tenant}</td>
-                      <td className="py-2 pr-2 text-[var(--sk-muted)]">{record.month}</td>
-                      <td className="py-2 pr-2 font-mono text-[var(--sk-text2)]">{fmt(record.amount)}</td>
-                      <td className="py-2 pr-2 text-[var(--sk-muted)] font-mono">{record.units}</td>
-                      <td className="py-2 pr-2 text-[var(--sk-muted)] font-mono">{fmt(record.lightBill)}</td>
-                      <td className="py-2 pr-2 font-bold font-mono text-green-400">{fmt(record.total)}</td>
-                      <td className="py-2 pr-2"><StatusBadge status={record.status} /></td>
-                      <td className="py-2 pr-2">
+                      <td className="py-2 pr-2 whitespace-nowrap text-[var(--sk-faint)] font-mono">{record.date.split("-").reverse().join("/")}</td>
+                      <td className="py-2 pr-2 font-semibold whitespace-nowrap">{record.tenant}</td>
+                      <td className="py-2 pr-2 whitespace-nowrap text-[var(--sk-muted)]">{record.month}</td>
+                      <td className="py-2 pr-2 whitespace-nowrap font-mono text-[var(--sk-text2)]">{fmt(record.amount)}</td>
+                      <td className="py-2 pr-2 whitespace-nowrap text-[var(--sk-muted)] font-mono">{record.units}</td>
+                      <td className="py-2 pr-2 whitespace-nowrap text-[var(--sk-muted)] font-mono">{fmt(record.lightBill)}</td>
+                      <td className="py-2 pr-2 whitespace-nowrap font-bold font-mono text-green-400">{fmt(record.total)}</td>
+                      <td className="py-2 pr-2 whitespace-nowrap"><StatusBadge status={record.status} /></td>
+                      <td className="py-2 pr-2 whitespace-nowrap">
                         {record.whatsapp ? (
                           <a href={`https://wa.me/91${record.whatsapp}`} className="text-green-400 hover:text-green-300"><MessageCircle size={13} /></a>
                         ) : "-"}

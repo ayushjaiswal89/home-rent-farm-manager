@@ -51,18 +51,57 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
     machine: "",
     season: "Kharif",
   });
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | FarmRecord["type"]>("all");
+  const [cropSearch, setCropSearch] = useState("");
+const [typeFilter, setTypeFilter] =
+  useState<"all" | FarmRecord["type"]>("all");
 
-  const filteredRecords = useMemo(
-    () => records.filter(record => {
-      if (typeFilter !== "all" && record.type !== typeFilter) return false;
-      return record.crop.toLowerCase().includes(search.toLowerCase()) || record.note.toLowerCase().includes(search.toLowerCase());
-    }),
-    [records, search, typeFilter]
-  );
+const [dateFilter, setDateFilter] =
+  useState<"all" | "today" | "month" | "year">("all");
 
-  const totalExpense = useMemo(() => records.filter(record => record.type === "Expense").reduce((sum, record) => sum + record.amount, 0), [records]);
+ const filteredRecords = useMemo(() => {
+
+  const today = new Date().toISOString().slice(0, 10);
+  const month = today.slice(0, 7);
+  const year = today.slice(0, 4);
+
+  return records.filter((record) => {
+
+    const cropMatch =
+      record.crop.toLowerCase().includes(cropSearch.toLowerCase()) ||
+      record.note.toLowerCase().includes(cropSearch.toLowerCase());
+
+    const typeMatch =
+      typeFilter === "all"
+        ? true
+        : record.type === typeFilter;
+
+    let dateMatch = true;
+
+    switch (dateFilter) {
+
+      case "today":
+        dateMatch = record.date === today;
+        break;
+
+      case "month":
+        dateMatch = record.date.startsWith(month);
+        break;
+
+      case "year":
+        dateMatch = record.date.startsWith(year);
+        break;
+
+      default:
+        dateMatch = true;
+    }
+
+    return cropMatch && typeMatch && dateMatch;
+
+  });
+
+}, [records, cropSearch, typeFilter, dateFilter]);
+
+  const totalExpense = useMemo(() => filteredRecords.filter(record => record.type === "Expense").reduce((sum, record) => sum + record.amount, 0), [records]);
   const totalSales = useMemo(() => records.filter(record => record.type === "Sale").reduce((sum, record) => sum + record.amount, 0), [records]);
   const profit = useMemo(() => totalSales - totalExpense, [totalSales, totalExpense]);
 
@@ -113,10 +152,10 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
   const PIE_COLORS = ["#4ade80", "#f59e0b", "#f87171", "#818cf8", "#38bdf8", "#a78bfa"];
 
   return (
-    <div>
+  <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 xl:px-8">
       <SectionHeader title={t.farmTitle} sub={t.farmSub} />
 
-      <div className="flex gap-2 mb-4 flex-wrap">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         {[
           { type: "Expense" as const, label: t.farmTypeExpense },
           { type: "Yield" as const, label: t.farmTypeYield },
@@ -125,17 +164,17 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
           <button
             key={button.type}
             onClick={() => setForm(current => ({ ...current, type: button.type }))}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${form.type === button.type ? "bg-green-500 text-[#0f1221]" : "bg-[var(--sk-hover)] text-[var(--sk-muted)] hover:bg-[var(--sk-hover2)] border border-[var(--sk-border2)]"}`}
+            className={`w-full px-4 py-2 rounded-lg text-sm font-bold transition-colors ${form.type === button.type ? "bg-green-500 text-[#0f1221]" : "bg-[var(--sk-hover)] text-[var(--sk-muted)] hover:bg-[var(--sk-hover2)] border border-[var(--sk-border2)]"}`}
           >
             + {button.label}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
         <FormCard>
           <form onSubmit={addRecord} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <InputGroup label={t.date}>
                 <input type="date" className={inputCls} value={form.date} onChange={e => setForm(current => ({ ...current, date: e.target.value }))} />
               </InputGroup>
@@ -199,23 +238,24 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
             <InputGroup label={t.note}>
               <input type="text" className={inputCls} value={form.note} onChange={e => setForm(current => ({ ...current, note: e.target.value }))} />
             </InputGroup>
-            <button type="submit" className={btnPrimary}><Plus size={14} />{t.addRecord}</button>
+            <button type="submit" className={`${btnPrimary} w-full sm:w-auto`}>{t.addRecord}</button>
           </form>
         </FormCard>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <KpiBox label={t.totExpense} value={fmt(totalExpense)} bar barPct={(totalExpense / 100000) * 100} />
             <KpiBox label={t.totSales} value={fmt(totalSales)} bar barPct={(totalSales / 100000) * 100} />
             <KpiBox label={t.totProfit} value={fmt(profit)} green={profit >= 0} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormCard>
               <div className="text-xs text-[var(--sk-faint)] mb-2">{t.expCatLabel}</div>
               {pieData.length > 0 ? (
                 <>
-                  <ResponsiveContainer width="100%" height={100}>
+                  <div className="h-40 sm:h-48">
+  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={pieData} dataKey="value" innerRadius={28} outerRadius={45} paddingAngle={2}>
                         {pieData.map((entry, index) => <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
@@ -223,6 +263,7 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
                       <Tooltip formatter={(value: number) => [fmt(value), ""]} contentStyle={{ background: "var(--sk-card2)", border: "1px solid var(--sk-border2)", borderRadius: 8, fontSize: 11 }} />
                     </PieChart>
                   </ResponsiveContainer>
+                  </div>
                   <div className="space-y-1 mt-1">
                     {pieData.slice(0, 3).map((item, index) => (
                       <div key={item.name} className="flex items-center gap-1.5 text-xs">
@@ -240,7 +281,8 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
 
             <FormCard>
               <div className="text-xs text-[var(--sk-faint)] mb-2">{t.monthlyChart}</div>
-              <ResponsiveContainer width="100%" height={140}>
+              <div className="h-48 sm:h-56">
+  <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--sk-grid)" vertical={false} />
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#64748b" }} axisLine={false} tickLine={false} />
@@ -249,6 +291,7 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
                   <Bar dataKey="farm" fill="#4ade80" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             </FormCard>
           </div>
         </div>
@@ -256,15 +299,42 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
 
       <div className="mt-4">
         <FormCard>
-          <div className="flex gap-2 mb-3 flex-wrap">
-            <SearchBar value={search} onChange={setSearch} placeholder={t.searchFarm} />
-            <select className={selectCls + " w-auto"} value={typeFilter} onChange={e => setTypeFilter(e.target.value as any)}>
+          <div className="
+grid
+grid-cols-1
+sm:grid-cols-2
+lg:grid-cols-3
+xl:grid-cols-5
+gap-3
+mb-4
+">
+            <SearchBar 
+    value={cropSearch}
+    onChange={setCropSearch}
+    placeholder="Search Crop..."
+/>
+            <select className={`${selectCls} w-full`} value={typeFilter} onChange={e => setTypeFilter(e.target.value as any)}>
               <option value="all">{t.allTypes}</option>
               <option value="Expense">{t.farmTypeExpense}</option>
               <option value="Yield">{t.farmTypeYield}</option>
               <option value="Sale">{t.farmTypeSale}</option>
             </select>
-            <button type="button" className={btnSecondary + " text-xs"} onClick={() => {
+            <select
+    className={selectCls + " w-auto"}
+    value={dateFilter}
+    onChange={(e) =>
+      setDateFilter(
+        e.target.value as
+          "all" | "today" | "month" | "year"
+      )
+    }
+  >
+    <option value="all">All Date</option>
+    <option value="today">Today</option>
+    <option value="month">This Month</option>
+    <option value="year">This Year</option>
+  </select>
+            <button type="button" className={`${btnSecondary} w-full` + " text-xs"} onClick={() => {
               const headers = [t.date, t.type, t.crop, t.labelField, t.labelArea, t.labelAreaUnit, t.expCat, t.amount, t.qty, t.unit, t.price, t.note];
               const rows = filteredRecords.map(record => [record.date, record.type, record.crop, record.field || "", record.area || "", record.areaUnit || "", record.expenseCategory, record.amount, record.quantity, record.unit, record.price, record.note]);
               const csv = [headers, ...rows].map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\r\n");
@@ -286,8 +356,8 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
               win.document.close();
             }}><FileText size={13} />PDF</button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div className="w-full overflow-x-auto rounded-xl">
+            <table className="min-w-[700px] w-full text-xs">
               <thead>
                 <tr className="border-b border-[var(--sk-border)] text-[var(--sk-faint)]">
                   {[t.date, t.type, t.crop, t.note, t.amount, t.tableAction].map(header => (
@@ -298,12 +368,12 @@ export function FarmSection({ records, setRecords, lang }: FarmSectionProps) {
               <tbody>
                 {filteredRecords.map(record => (
                   <tr key={record.id} className="border-b border-white/5 hover:bg-white/2">
-                    <td className="py-2.5 pr-3 text-[var(--sk-faint)] font-mono">{record.date.split("-").reverse().join("/")}</td>
-                    <td className="py-2.5 pr-3"><StatusBadge status={record.type} /></td>
-                    <td className="py-2.5 pr-3 text-[var(--sk-text2)] font-semibold">{record.crop}</td>
-                    <td className="py-2.5 pr-3 text-[var(--sk-muted)] text-xs max-w-[220px]">{record.note}</td>
-                    <td className="py-2.5 pr-3 font-bold font-mono text-green-400">{record.type === "Expense" ? fmt(record.amount) : record.type === "Sale" ? fmt(record.amount) : `${record.quantity} ${record.unit}`}</td>
-                    <td className="py-2.5">
+                    <td className="py-2.5 pr-3  whitespace-nowrap text-[var(--sk-faint)] font-mono">{record.date.split("-").reverse().join("/")}</td>
+                    <td className="py-2.5 pr-3 whitespace-nowrap"><StatusBadge status={record.type} /></td>
+                    <td className="py-2.5 pr-3  whitespace-nowrap text-[var(--sk-text2)] font-semibold">{record.crop}</td>
+                    <td className="py-2.5 pr-3  whitespace-nowrap text-[var(--sk-muted)] text-xs max-w-[120px] sm:max-w-[220px] truncate">{record.note}</td>
+                    <td className="py-2.5 pr-3  whitespace-nowrap font-bold font-mono text-green-400">{record.type === "Expense" ? fmt(record.amount) : record.type === "Sale" ? fmt(record.amount) : `${record.quantity} ${record.unit}`}</td>
+                    <td className="py-2.5  whitespace-nowrap">
                       <button onClick={() => deleteRecord(record.id)} className="text-[var(--sk-dim)] hover:text-red-400"><Trash2 size={12} /></button>
                     </td>
                   </tr>

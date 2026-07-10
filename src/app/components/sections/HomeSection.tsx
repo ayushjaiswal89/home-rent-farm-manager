@@ -30,6 +30,12 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
   });
   const [search, setSearch] = useState("");
 
+  const [categorySearch, setCategorySearch] = useState("");
+  const [noteSearch, setNoteSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+
   const categories = useMemo(() => [
     t.groceryCat,
     t.billsCat,
@@ -54,15 +60,70 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
     "🧾 अन्य": t.otherCat,
   }), [t]);
 
-  const filteredRecords = useMemo(
-    () => records.filter(record =>
-      record.category.toLowerCase().includes(search.toLowerCase()) ||
-      record.note.toLowerCase().includes(search.toLowerCase())
-    ),
-    [records, search]
-  );
+  const filteredRecords = useMemo(() => {
 
-  const monthTotal = useMemo(() => records.reduce((acc, record) => acc + record.amount, 0), [records]);
+    const today = new Date().toISOString().slice(0, 10);
+    const month = today.slice(0, 7);
+    const year = today.slice(0, 4);
+
+    return records.filter(record => {
+
+      if (
+        categorySearch &&
+        !record.category.toLowerCase().includes(categorySearch.toLowerCase())
+      )
+        return false;
+
+      if (
+        noteSearch &&
+        !(record.note || "").toLowerCase().includes(noteSearch.toLowerCase())
+      )
+        return false;
+
+      if (dateFilter === "today" && record.date !== today)
+        return false;
+
+      if (
+        dateFilter === "month" &&
+        !record.date.startsWith(month)
+      )
+        return false;
+
+      if (
+        dateFilter === "year" &&
+        !record.date.startsWith(year)
+      )
+        return false;
+
+      if (
+        minAmount &&
+        record.amount < Number(minAmount)
+      )
+        return false;
+
+      if (
+        maxAmount &&
+        record.amount > Number(maxAmount)
+      )
+        return false;
+
+      return true;
+
+    });
+
+  }, [
+    records,
+    categorySearch,
+    noteSearch,
+    dateFilter,
+    minAmount,
+    maxAmount,
+  ]);
+
+  const monthTotal = useMemo(
+    () => filteredRecords.reduce((acc, record) => acc + record.amount, 0),
+    [filteredRecords]
+  );
   const dailyAvg = useMemo(() => (records.length ? monthTotal / 30 : 0), [monthTotal, records.length]);
   const topCatName = useMemo(() => {
     const totals = records.reduce<Record<string, number>>((acc, record) => {
@@ -95,17 +156,17 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
   }, [setRecords]);
 
   return (
-    <div>
+  <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-8">
       <SectionHeader title={t.homeTitle} sub={t.homeSub} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <FormCard>
           <form onSubmit={onAddRecord} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <InputGroup label={t.date}>
                 <input
                   type="date"
-                  className={inputCls}
+                  className={`${inputCls} w-full`}
                   value={form.date}
                   onChange={e => setForm(current => ({ ...current, date: e.target.value }))}
                   required
@@ -113,7 +174,7 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
               </InputGroup>
               <InputGroup label={t.category}>
                 <select
-                  className={selectCls}
+                  className={`${selectCls} w-full`}
                   value={form.category}
                   onChange={e => setForm(current => ({ ...current, category: e.target.value }))}
                 >
@@ -124,7 +185,7 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
                 <input
                   type="number"
                   min="0"
-                  className={inputCls}
+                  className={`${inputCls} w-full`}
                   placeholder="0"
                   value={form.amount}
                   onChange={e => setForm(current => ({ ...current, amount: e.target.value }))}
@@ -134,33 +195,86 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
               <InputGroup label={t.note}>
                 <input
                   type="text"
-                  className={inputCls}
+                  className={`${inputCls} w-full`}
                   placeholder={lang === "hi" ? "दूध, सब्जी, बिजली बिल..." : "Milk, vegetables, bill..."}
                   value={form.note}
                   onChange={e => setForm(current => ({ ...current, note: e.target.value }))}
                 />
               </InputGroup>
             </div>
-            <div className="flex gap-2 pt-1 flex-wrap">
-              <button type="submit" className={btnPrimary}><Plus size={14} />{t.addExpense}</button>
-              <button type="button" className={btnSecondary} onClick={() => setRecords([])}>{t.clearList}</button>
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+
+
+              <button type="submit" className={`${btnPrimary} w-full sm:w-auto`}>{t.addExpense}</button>
+              <button type="button" className={`${btnSecondary} w-full sm:w-auto`} onClick={() => setRecords([])}>{t.clearList}</button>
             </div>
           </form>
         </FormCard>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <KpiBox label={t.monthTotal} value={fmt(monthTotal)} bar barPct={(monthTotal / 20000) * 100} />
             <KpiBox label={t.dailyAvg} value={fmt(dailyAvg)} trend="↑ 8%" />
             <KpiBox label={t.topCat} value={categoryMap[topCatName] || topCatName} />
           </div>
 
           <FormCard>
-            <div className="flex gap-2 mb-3 flex-wrap">
-              <SearchBar value={search} onChange={setSearch} placeholder={t.searchCat} />
+            <div className="flex gap-2 mb-4 flex-wrap">
+
+
+              <div className="grid
+grid-cols-1
+sm:grid-cols-2
+md:grid-cols-3
+xl:grid-cols-5
+gap-3
+w-full">
+
+                <input
+                  className={`${inputCls} w-full`}
+                  placeholder="Category..."
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                />
+
+                <input
+                  className={`${inputCls} w-full`}
+                  placeholder="Note..."
+                  value={noteSearch}
+                  onChange={(e) => setNoteSearch(e.target.value)}
+                />
+
+                <select
+                  className={`${selectCls} w-full`}
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                >
+                  <option value="all">All Dates</option>
+                  <option value="today">Today</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                </select>
+
+                <input
+                  type="number"
+                  className={`${inputCls} w-full`}
+                  placeholder="Min ₹"
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                />
+
+                <input
+                  type="number"
+                  className={`${inputCls} w-full`}
+                  placeholder="Max ₹"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                />
+
+              </div>
               <button
                 type="button"
-                className={btnSecondary + " text-xs"}
+                className={`${btnSecondary} w-full sm:w-auto justify-center text-xs`}
                 onClick={() => {
                   const headers = [t.date, t.category, t.note, t.amount];
                   const rows = filteredRecords.map(record => [record.date, categoryMap[record.category] || record.category, record.note, record.amount]);
@@ -176,7 +290,7 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
               ><Download size={13} />{t.csvExport}</button>
               <button
                 type="button"
-                className={btnSecondary + " text-xs"}
+                className={`${btnSecondary} w-full sm:w-auto justify-center text-xs`}
                 onClick={() => {
                   const headers = [t.date, t.category, t.note, t.amount];
                   const rows = filteredRecords.map(record => [record.date, categoryMap[record.category] || record.category, record.note, fmt(record.amount)]);
@@ -190,8 +304,8 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
               ><FileText size={13} />{t.pdfDownload}</button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="w-full overflow-x-auto rounded-lg">
+              <table className="min-w-[650px] w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--sk-border)] text-[var(--sk-faint)] text-xs">
                     <th className="text-left py-2 pr-3 font-semibold">{t.date}</th>
@@ -206,7 +320,7 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
                     <tr key={record.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
                       <td className="py-2.5 pr-3 text-[var(--sk-faint)] text-xs font-mono">{record.date.split("-").reverse().join("/")}</td>
                       <td className="py-2.5 pr-3 text-[var(--sk-muted)] text-xs">{categoryMap[record.category] || record.category}</td>
-                      <td className="py-2.5 pr-3 text-[var(--sk-text2)] text-xs max-w-[120px] truncate">{record.note}</td>
+                      <td className="py-2.5 pr-3 text-[var(--sk-text2)] text-xs max-w-[140px] sm:max-w-[220px] truncate">{record.note}</td>
                       <td className="py-2.5 pr-3 text-right font-bold font-mono text-red-400 text-xs">{fmt(record.amount)}</td>
                       <td className="py-2.5 text-center">
                         <button onClick={() => onDelete(record.id)} className="text-[var(--sk-dim)] hover:text-red-400 transition-colors"><Trash2 size={12} /></button>
