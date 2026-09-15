@@ -14,6 +14,7 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 
 
 
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface NavItem {
@@ -34,9 +35,62 @@ const INIT_HOME: HomeExpense[] = [
 ];
 
 const INIT_RENT: RentRecord[] = [
-  { id: "r1", date: "2024-06-01", tenant: "रामेश्वर सिंह", month: "Jun", whatsapp: "9876543210", amount: 8000, prevReading: 520, currentReading: 573, ratePerUnit: 8, units: 53, lightBill: 424, total: 8424, status: "Received", note: "" },
-  { id: "r2", date: "2024-06-01", tenant: "मोहन लाल", month: "Jun", whatsapp: "9765432109", amount: 6500, prevReading: 310, currentReading: 348, ratePerUnit: 8, units: 38, lightBill: 304, total: 6804, status: "Pending", note: "देरी से आयेगा" },
-  { id: "r3", date: "2024-06-01", tenant: "सुरेश पाल", month: "Jun", whatsapp: "9654321098", amount: 5000, prevReading: 180, currentReading: 214, ratePerUnit: 8, units: 34, lightBill: 272, total: 5272, status: "Partial", note: "आधा दिया" },
+  {
+    id: "r1",
+    date: "2024-06-01",
+    tenant: "रामेश्वर सिंह",
+    month: "Jun",
+    whatsapp: "9876543210",
+    amount: 8000,
+    prevReading: 520,
+    currentReading: 573,
+    ratePerUnit: 8,
+    units: 53,
+    lightBill: 424,
+    total: 8424,
+    paidAmount: 8424,
+    remainingAmount: 0,
+    status: "Received",
+    note: "",
+  },
+
+  {
+    id: "r2",
+    date: "2024-06-01",
+    tenant: "मोहन लाल",
+    month: "Jun",
+    whatsapp: "9765432109",
+    amount: 6500,
+    prevReading: 310,
+    currentReading: 348,
+    ratePerUnit: 8,
+    units: 38,
+    lightBill: 304,
+    total: 6804,
+    paidAmount: 0,
+    remainingAmount: 6804,
+    status: "Pending",
+    note: "देरी से आयेगा",
+  },
+
+  {
+    id: "r3",
+    date: "2024-06-01",
+    tenant: "सुरेश पाल",
+    month: "Jun",
+    whatsapp: "9654321098",
+    amount: 5000,
+    prevReading: 180,
+    currentReading: 214,
+    ratePerUnit: 8,
+    units: 34,
+    lightBill: 272,
+    total: 5272,
+    paidAmount: 2636,
+    remainingAmount: 2636,
+    status: "Partial",
+    note: "आधा दिया",
+  },
 ];
 
 const INIT_FARM: FarmRecord[] = [
@@ -63,53 +117,91 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const [settings, setSettings] = useLocalStorage<AppSettings>("sk_settings", DEFAULT_SETTINGS);
+  const [isLocked, setIsLocked] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
   const [homeRecords, setHomeRecords] = useLocalStorage<HomeExpense[]>("sk_home", INIT_HOME);
   const [rentRecords, setRentRecords] = useLocalStorage<RentRecord[]>("sk_rent", INIT_RENT);
   const [farmRecords, setFarmRecords] = useLocalStorage<FarmRecord[]>("sk_farm", INIT_FARM);
- const [isOnline, setIsOnline] = useState(
-  typeof navigator !== "undefined"
-    ? navigator.onLine
-    : true
-);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined"
+      ? navigator.onLine
+      : true
+  );
 
-useEffect(() => {
-  const online = () => setIsOnline(true);
-  const offline = () => setIsOnline(false);
+  useEffect(() => {
+    const online = () => setIsOnline(true);
+    const offline = () => setIsOnline(false);
 
-  window.addEventListener("online", online);
-  window.addEventListener("offline", offline);
+    window.addEventListener("online", online);
+    window.addEventListener("offline", offline);
 
-  return () => {
-    window.removeEventListener("online", online);
-    window.removeEventListener("offline", offline);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("online", online);
+      window.removeEventListener("offline", offline);
+    };
+  }, []);
   const {
-  offlineReady: [offlineReady],
-  needRefresh: [needRefresh],
-  updateServiceWorker,
-} = useRegisterSW();
+    offlineReady: [offlineReady],
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW();
 
-const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-useEffect(() => {
-  const handler = (e: any) => {
-    e.preventDefault();
-    setDeferredPrompt(e);
-  };
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
 
-  window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("beforeinstallprompt", handler);
 
-  return () => {
-    window.removeEventListener("beforeinstallprompt", handler);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
+  }, []);
 
   const darkMode = settings.darkMode;
+  const pendingRentCount = useMemo(() => {
+  return rentRecords.filter(
+    r => r.status === "Pending" || r.status === "Partial"
+  ).length;
+}, [rentRecords]);
+const requestNotifications = async (): Promise<boolean> => {
+  if (!("Notification" in window)) {
+    return false;
+  }
+
+  if (Notification.permission === "granted") {
+    return true;
+  }
+
+  if (Notification.permission === "denied") {
+    return false;
+  }
+
+  const permission = await Notification.requestPermission();
+
+  return permission === "granted";
+};
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", settings.darkMode);
   }, [settings.darkMode]);
+
+  useEffect(() => {
+    if (settings.appLock && settings.pin.length === 4) {
+      const unlocked =
+        sessionStorage.getItem("smart-khaata-unlocked");
+
+      if (unlocked !== "true") {
+        setIsLocked(true);
+      }
+    } else {
+      setIsLocked(false);
+    }
+  }, [settings.appLock, settings.pin]);
 
   useEffect(() => {
     const backup = {
@@ -124,6 +216,108 @@ useEffect(() => {
       JSON.stringify(backup)
     );
   }, [homeRecords, rentRecords, farmRecords]);
+
+  useEffect(() => {
+    const installed = () => {
+      // Install banner hide कर दो
+      setDeferredPrompt(null);
+
+      // Optional: console message
+      console.log("Smart Khaata installed successfully");
+    };
+
+    window.addEventListener("appinstalled", installed);
+
+    return () => {
+      window.removeEventListener("appinstalled", installed);
+    };
+  }, []);
+  useEffect(() => {
+  if (!settings.notifs) return;
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  if (pendingRentCount === 0) return;
+
+  const today = new Date()
+    .toISOString()
+    .slice(0, 10);
+
+  const notificationKey =
+    `rent-notification-${today}`;
+
+  if (localStorage.getItem(notificationKey)) {
+    return;
+  }
+
+  new Notification("Smart Khaata", {
+    body:
+      settings.lang === "hi"
+        ? `${pendingRentCount} किराये का भुगतान बाकी है।`
+        : `${pendingRentCount} rent payment(s) are pending.`,
+
+    icon:
+      `${import.meta.env.BASE_URL}icons/icon-192.png`,
+  });
+
+  localStorage.setItem(
+    notificationKey,
+    "true"
+  );
+}, [
+  settings.notifs,
+  pendingRentCount,
+  settings.lang,
+]);
+
+  const unlockApp = () => {
+    if (pinInput === settings.pin) {
+      sessionStorage.setItem(
+        "smart-khaata-unlocked",
+        "true"
+      );
+      const requestNotifications = async () => {
+        if (!("Notification" in window)) {
+          return false;
+        }
+
+
+        if (Notification.permission === "granted") {
+          return true;
+        }
+
+        if (Notification.permission === "denied") {
+          return false;
+        }
+
+        const permission =
+          await Notification.requestPermission();
+
+        return permission === "granted";
+      };
+
+      const pendingRentCount = useMemo(() => {
+        return rentRecords.filter(
+          r =>
+            r.status === "Pending" ||
+            r.status === "Partial"
+        ).length;
+      }, [rentRecords]);
+
+      setIsLocked(false);
+      setPinInput("");
+      setPinError("");
+    } else {
+      setPinError(
+        settings.lang === "hi"
+          ? "गलत PIN है।"
+          : "Incorrect PIN."
+      );
+
+      setPinInput("");
+    }
+  };
+
+
 
   const navItems = useMemo<NavItem[]>(() => {
     const nav = STRINGS[settings.lang].nav;
@@ -170,12 +364,75 @@ useEffect(() => {
           />
         );
       case "settings":
-        return <SettingsSection settings={settings} setSettings={setSettings} />;
+        return <SettingsSection settings={settings} setSettings={setSettings}   requestNotifications={requestNotifications} />;
       default:
         return null;
     }
   };
 
+  if (isLocked) {
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-white flex items-center justify-center p-5">
+      <div className="w-full max-w-sm bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-2xl shadow-2xl p-6">
+
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-green-100 dark:bg-green-500/15 flex items-center justify-center text-3xl mb-4">
+            🔐
+          </div>
+
+          <h1 className="text-xl font-bold">
+            Smart Khaata
+          </h1>
+
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-2">
+            {settings.lang === "hi"
+              ? "ऐप अनलॉक करने के लिए PIN डालें"
+              : "Enter your PIN to unlock"}
+          </p>
+        </div>
+
+        <input
+          type="password"
+          inputMode="numeric"
+          maxLength={4}
+          autoFocus
+          value={pinInput}
+          onChange={(e) => {
+            const value = e.target.value
+              .replace(/\D/g, "")
+              .slice(0, 4);
+
+            setPinInput(value);
+            setPinError("");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && pinInput.length === 4) {
+              unlockApp();
+            }
+          }}
+          className="w-full h-12 rounded-xl border border-gray-300 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-800 text-center text-xl tracking-[0.5em] outline-none focus:border-green-500"
+          placeholder="••••"
+        />
+
+        {pinError && (
+          <p className="text-red-500 text-xs text-center mt-3">
+            {pinError}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={unlockApp}
+          disabled={pinInput.length !== 4}
+          className="w-full mt-5 h-11 rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold transition-colors"
+        >
+          {settings.lang === "hi" ? "अनलॉक करें" : "Unlock"}
+        </button>
+
+      </div>
+    </div>
+  );
+}
   return (
 
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -185,12 +442,12 @@ useEffect(() => {
         <div className="flex items-center justify-between px-3 sm:px-4 h-14 max-w-7xl mx-auto">
           {/* Logo */}
           <div className="flex items-center gap-2 min-w-0 flex-1">
-           <img
- src={import.meta.env.BASE_URL + "icons/icon-192.png"}
-  alt="Smart Khaata"
-  width={40}
-  height={40}
-/>
+            <img
+              src={import.meta.env.BASE_URL + "icons/icon-192.png"}
+              alt="Smart Khaata"
+              width={40}
+              height={40}
+            />
 
             <div className="min-w-0">
               <h1 className="text-sm sm:text-base font-bold text-foreground truncate">
@@ -222,7 +479,7 @@ useEffect(() => {
             <button onClick={() => setSettings(current => ({ ...current, darkMode: !current.darkMode }))} className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               {darkMode ? <Sun size={15} /> : <Moon size={15} />}
             </button>
-            
+
             <button
               onClick={() => setDrawerOpen(true)}
               className="md:hidden w-8 h-8 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -235,8 +492,38 @@ useEffect(() => {
       </header>
 
       <div className="bg-green-500/10 border-b border-green-400/15 px-2 sm:px-4 py-2">
-        <p className="text-xs text-green-400/80 text-center max-w-7xl mx-auto">{STRINGS[settings.lang].banner}</p>
+        <p className="text-xs text-green-400/80 text-center max-w-7xl mx-auto">
+          {STRINGS[settings.lang].banner}
+        </p>
       </div>
+
+      {/* Install App Banner */}
+      {deferredPrompt && (
+        <div className="bg-green-600/10 border-b border-green-500/20">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-green-500">
+                📲 Smart Khaata Install करें
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                App को Install करें और Offline भी इस्तेमाल करें।
+              </p>
+            </div>
+
+            <button
+              onClick={async () => {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                setDeferredPrompt(null);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-semibold transition-colors"
+            >
+              Install App
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {/* Mobile Drawer */}
       {drawerOpen && (
@@ -294,58 +581,37 @@ useEffect(() => {
         {renderSection()}
       </main>
 
-      {/* Floating Install Button */}
-{deferredPrompt && (
-  <div className="fixed bottom-28 right-4 md:bottom-6 md:right-6 z-[100]">
-    <button
-      onClick={async () => {
-        deferredPrompt.prompt();
 
-        const { outcome } = await deferredPrompt.userChoice;
-
-        if (outcome === "accepted") {
-          console.log("App Installed");
-        }
-
-        setDeferredPrompt(null);
-      }}
-      className="flex items-center gap-2 px-4 py-3 rounded-xl
-                 bg-green-600 hover:bg-green-700
-                 text-white font-semibold shadow-2xl
-                 transition-all"
-    >
-      📲 Install App
-    </button>
-  </div>
-)}
 
       {(offlineReady || needRefresh) && (
-  <div className="fixed bottom-28 md:bottom-6 right-4 z-50 bg-white dark:bg-zinc-900 border rounded-xl shadow-lg p-4 max-w-xs">
-    {offlineReady && (
-      <p className="text-sm mb-3">
-        ✅ App is ready for offline use.
-      </p>
-    )}
+        <div className="fixed bottom-40 right-4 z-50 bg-white dark:bg-zinc-900 border rounded-xl shadow-lg p-4 max-w-xs">
+          {offlineReady && (
+            <p className="text-sm mb-3">
+              ✅ App is ready for offline use.
+            </p>
+          )}
 
-    {needRefresh && (
-      <>
-        <p className="text-sm mb-3">
-          New version available.
-        </p>
+          {needRefresh && (
+            <>
+              <p className="text-sm mb-3">
+                New version available.
+              </p>
 
-        <button
-          onClick={() => updateServiceWorker(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg"
-        >
-          Update
-        </button>
-      </>
-    )}
-  </div>
-)}
+              <button
+                onClick={() => updateServiceWorker(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg"
+              >
+                Update
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Bottom Nav (mobile) */}
+
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+
         <div className="flex">
           {navItems.slice(0, 5).map(n => (
             <button key={n.id} onClick={() => goTo(n.id)}
@@ -356,6 +622,7 @@ useEffect(() => {
             </button>
           ))}
         </div>
+
       </nav>
 
       {/* FAB */}

@@ -3,14 +3,19 @@ import { AppSettings } from "./types";
 const SETTINGS_KEY = "sk_settings";
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  goalExpense: "15000",
-  goalRent: "12000",
+  goalExpense: "20000",
+  goalRent: "20000",
   lang: "hi",
   currency: "INR",
   darkMode: true,
   notifs: true,
   backupReminder: true,
   exportCsv: false,
+  dateFormat: "DD/MM/YYYY",
+
+  // New
+  appLock: false,
+  pin: "",
 };
 
 export function loadSettings(): AppSettings {

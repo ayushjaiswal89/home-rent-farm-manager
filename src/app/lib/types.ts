@@ -17,17 +17,29 @@ export interface RentRecord {
   tenant: string;
   month: string;
   whatsapp: string;
+
+  // Rent
   amount: number;
+
+  // Electricity
   prevReading: number;
   currentReading: number;
   ratePerUnit: number;
   units: number;
   lightBill: number;
+
+  // Total bill
   total: number;
+
+  // Payment tracking
+  paidAmount: number;
+  remainingAmount: number;
+
+  // Status
   status: RentStatus;
+
   note: string;
 }
-
 export type FarmType = "Expense" | "Yield" | "Sale";
 
 export interface FarmRecord {
@@ -52,14 +64,15 @@ export interface FarmRecord {
 export interface AppSettings {
   goalExpense: string;
   goalRent: string;
-  lang: "hi" | "en";
+  lang: Lang;
   currency: "INR" | "USD" | "EUR";
-   dateFormat:
-    | "DD/MM/YYYY"
-    | "MM/DD/YYYY"
-    | "YYYY-MM-DD";
   darkMode: boolean;
   notifs: boolean;
   backupReminder: boolean;
   exportCsv: boolean;
+  dateFormat: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+
+  // New
+  appLock: boolean;
+  pin: string;
 }
