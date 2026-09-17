@@ -191,7 +191,7 @@ const requestNotifications = async (): Promise<boolean> => {
   }, [settings.darkMode]);
 
   useEffect(() => {
-    if (settings.appLock && settings.pin.length === 4) {
+    if (settings.appLock && settings.pin?.length === 4) {
       const unlocked =
         sessionStorage.getItem("smart-khaata-unlocked");
 

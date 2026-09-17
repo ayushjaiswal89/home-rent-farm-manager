@@ -164,7 +164,7 @@ export function SettingsSection({
                       maxLength={4}
                       className={inputCls}
                       placeholder="••••"
-                      value={settings.pin}
+                      value={settings.pin ?? ""}
                       onChange={(e) => {
                         const value = e.target.value
                           .replace(/\D/g, "")
@@ -175,7 +175,7 @@ export function SettingsSection({
                     />
                   </InputGroup>
 
-                  {settings.pin.length > 0 && settings.pin.length < 4 && (
+                  {(settings.pin?.length ?? 0) > 0 && (settings.pin?.length ?? 0) < 4 && (
                     <p className="text-xs text-red-400 mt-2">
                       {isHi
                         ? "PIN 4 अंकों का होना चाहिए।"
