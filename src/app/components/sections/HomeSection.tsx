@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
@@ -6,11 +7,14 @@ import {
   FileText,
   Search,
   Trash2,
+  Pencil,
   Plus,
+  X,
+  Save,
   SlidersHorizontal,
 } from "lucide-react";
 
-import { HomeExpense, Lang } from "../../lib/types";
+import type { HomeExpense, Lang } from "../../lib/types";
 import { STRINGS } from "../../lib/i18n";
 import { fmt } from "../../lib/utils";
 
@@ -27,7 +31,9 @@ import {
 
 interface HomeSectionProps {
   records: HomeExpense[];
-  setRecords: React.Dispatch<React.SetStateAction<HomeExpense[]>>;
+  setRecords: React.Dispatch<
+    React.SetStateAction<HomeExpense[]>
+  >;
   lang: Lang;
 }
 
@@ -38,30 +44,44 @@ interface HomeForm {
   amount: string;
 }
 
+type DateFilter =
+  | "all"
+  | "today"
+  | "month"
+  | "year";
+
 export function HomeSection({
   records,
   setRecords,
   lang,
 }: HomeSectionProps) {
   const t = STRINGS[lang];
+  const isHi = lang === "hi";
 
   // =====================================================
   // FORM
   // =====================================================
 
+  const getToday = () =>
+    new Date().toISOString().split("T")[0];
+
   const [form, setForm] = useState<HomeForm>({
-    date: new Date().toISOString().split("T")[0],
+    date: getToday(),
     category: "grocery",
     note: "",
     amount: "",
   });
+
+  const [editingId, setEditingId] =
+    useState<string | null>(null);
 
   // =====================================================
   // FILTERS
   // =====================================================
 
   const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("all");
+  const [dateFilter, setDateFilter] =
+    useState<DateFilter>("all");
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
 
@@ -81,25 +101,43 @@ export function HomeSection({
     [t]
   );
 
-  const categories = Object.keys(categoryLabels);
+  const categories = Object.keys(
+    categoryLabels
+  );
 
   // =====================================================
   // FILTERED RECORDS
   // =====================================================
 
   const filteredRecords = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getToday();
     const month = today.slice(0, 7);
     const year = today.slice(0, 4);
 
-    const searchText = search.trim().toLowerCase();
+    const searchText =
+      search.trim().toLowerCase();
 
     return records.filter((record) => {
-      const matchesSearch =
-        record.category.toLowerCase().includes(searchText) ||
-        (record.note || "").toLowerCase().includes(searchText);
+      const categoryText =
+        categoryLabels[
+          record.category as keyof typeof categoryLabels
+        ] || record.category;
 
-      if (searchText && !matchesSearch) {
+      const matchesSearch =
+        categoryText
+          .toLowerCase()
+          .includes(searchText) ||
+        record.category
+          .toLowerCase()
+          .includes(searchText) ||
+        (record.note || "")
+          .toLowerCase()
+          .includes(searchText);
+
+      if (
+        searchText &&
+        !matchesSearch
+      ) {
         return false;
       }
 
@@ -126,14 +164,16 @@ export function HomeSection({
 
       if (
         minAmount &&
-        record.amount < Number(minAmount)
+        record.amount <
+          Number(minAmount)
       ) {
         return false;
       }
 
       if (
         maxAmount &&
-        record.amount > Number(maxAmount)
+        record.amount >
+          Number(maxAmount)
       ) {
         return false;
       }
@@ -146,80 +186,116 @@ export function HomeSection({
     dateFilter,
     minAmount,
     maxAmount,
+    categoryLabels,
   ]);
 
   // =====================================================
-  // KPI
+  // SUMMARY
   // =====================================================
 
-  const monthTotal = useMemo(
+  const filteredTotal = useMemo(
     () =>
       filteredRecords.reduce(
-        (acc, record) => acc + record.amount,
+        (sum, record) =>
+          sum + Number(record.amount || 0),
         0
       ),
     [filteredRecords]
   );
 
   const dailyAvg = useMemo(() => {
-    if (!filteredRecords.length) return 0;
+    if (!filteredRecords.length) {
+      return 0;
+    }
 
     const uniqueDays = new Set(
-      filteredRecords.map((record) => record.date)
+      filteredRecords.map(
+        (record) => record.date
+      )
     ).size;
 
     return uniqueDays
-      ? monthTotal / uniqueDays
+      ? filteredTotal / uniqueDays
       : 0;
-  }, [filteredRecords, monthTotal]);
+  }, [filteredRecords, filteredTotal]);
 
   const topCatName = useMemo(() => {
-    const totals = filteredRecords.reduce<Record<string, number>>(
-      (acc, record) => {
+    const totals =
+      filteredRecords.reduce<
+        Record<string, number>
+      >((acc, record) => {
         acc[record.category] =
-          (acc[record.category] || 0) + record.amount;
+          (acc[record.category] || 0) +
+          Number(record.amount || 0);
 
         return acc;
-      },
-      {}
-    );
+      }, {});
 
     return (
-      Object.entries(totals).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-      ""
+      Object.entries(totals).sort(
+        (a, b) => b[1] - a[1]
+      )[0]?.[0] || ""
     );
   }, [filteredRecords]);
 
   const topCatLabel = useMemo(() => {
-    if (!topCatName) return "—";
+    if (!topCatName) {
+      return "—";
+    }
 
     return (
       categoryLabels[
-      topCatName as keyof typeof categoryLabels
+        topCatName as keyof typeof categoryLabels
       ] || topCatName
     );
-  }, [topCatName, categoryLabels]);
+  }, [
+    topCatName,
+    categoryLabels,
+  ]);
 
   // =====================================================
-  // RESET
+  // RESET FORM
   // =====================================================
 
   const resetForm = useCallback(() => {
     setForm({
-      date: new Date()
-        .toISOString()
-        .split("T")[0],
+      date: getToday(),
       category: "grocery",
       note: "",
       amount: "",
     });
+
+    setEditingId(null);
   }, []);
 
   // =====================================================
-  // ADD
+  // EDIT
   // =====================================================
 
-  const onAddRecord = useCallback(
+  const startEdit = useCallback(
+    (record: HomeExpense) => {
+      setEditingId(record.id);
+
+      setForm({
+        date: record.date,
+        category: record.category,
+        note: record.note || "",
+        amount: String(record.amount),
+      });
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    },
+    []
+  );
+
+  // =====================================================
+  // SAVE / UPDATE
+  // =====================================================
+
+  const onSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
@@ -232,25 +308,51 @@ export function HomeSection({
         amount <= 0
       ) {
         window.alert(
-          lang === "hi"
+          isHi
             ? "कृपया सभी आवश्यक जानकारी सही भरें।"
             : "Please fill in all required fields with valid values."
         );
+
         return;
       }
 
-      setRecords((current) => [
-        {
-          id: `h${Date.now()}`,
-          ...form,
-          amount,
-        },
-        ...current,
-      ]);
+      if (editingId) {
+        setRecords((current) =>
+          current.map((record) =>
+            record.id === editingId
+              ? {
+                  ...record,
+                  date: form.date,
+                  category:
+                    form.category,
+                  note: form.note,
+                  amount,
+                }
+              : record
+          )
+        );
+      } else {
+        setRecords((current) => [
+          {
+            id: `h${Date.now()}`,
+            date: form.date,
+            category: form.category,
+            note: form.note,
+            amount,
+          },
+          ...current,
+        ]);
+      }
 
       resetForm();
     },
-    [form, lang, resetForm, setRecords]
+    [
+      form,
+      editingId,
+      isHi,
+      resetForm,
+      setRecords,
+    ]
   );
 
   // =====================================================
@@ -259,13 +361,33 @@ export function HomeSection({
 
   const onDelete = useCallback(
     (id: string) => {
+      const confirmed =
+        window.confirm(
+          isHi
+            ? "क्या आप यह खर्च रिकॉर्ड हटाना चाहते हैं?"
+            : "Delete this expense record?"
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
       setRecords((current) =>
         current.filter(
           (record) => record.id !== id
         )
       );
+
+      if (editingId === id) {
+        resetForm();
+      }
     },
-    [setRecords]
+    [
+      isHi,
+      editingId,
+      resetForm,
+      setRecords,
+    ]
   );
 
   // =====================================================
@@ -273,16 +395,29 @@ export function HomeSection({
   // =====================================================
 
   const clearAllRecords = useCallback(() => {
-    const confirmed = window.confirm(
-      lang === "hi"
-        ? "क्या आप सभी Home Expense रिकॉर्ड हटाना चाहते हैं?"
-        : "Delete all home expense records?"
-    );
-
-    if (confirmed) {
-      setRecords([]);
+    if (!records.length) {
+      return;
     }
-  }, [lang, setRecords]);
+
+    const confirmed =
+      window.confirm(
+        isHi
+          ? `क्या आप सभी ${records.length} Home Expense रिकॉर्ड हटाना चाहते हैं?`
+          : `Delete all ${records.length} home expense records?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRecords([]);
+    resetForm();
+  }, [
+    records.length,
+    isHi,
+    resetForm,
+    setRecords,
+  ]);
 
   // =====================================================
   // CLEAR FILTERS
@@ -296,10 +431,20 @@ export function HomeSection({
   }, []);
 
   // =====================================================
-  // CSV
+  // CSV EXPORT
   // =====================================================
 
   const exportCSV = useCallback(() => {
+    if (!filteredRecords.length) {
+      window.alert(
+        isHi
+          ? "Export करने के लिए कोई रिकॉर्ड नहीं है।"
+          : "There are no records to export."
+      );
+
+      return;
+    }
+
     const headers = [
       t.date,
       t.category,
@@ -311,9 +456,9 @@ export function HomeSection({
       (record) => [
         record.date,
         categoryLabels[
-        record.category as keyof typeof categoryLabels
-        ],
-        record.note,
+          record.category as keyof typeof categoryLabels
+        ] || record.category,
+        record.note || "",
         record.amount,
       ]
     );
@@ -339,24 +484,42 @@ export function HomeSection({
       }
     );
 
-    const url = URL.createObjectURL(blob);
+    const url =
+      URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
+    const a =
+      document.createElement("a");
+
     a.href = url;
-    a.download = "home-expenses.csv";
+    a.download = `home-expenses-${getToday()}.csv`;
 
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
     URL.revokeObjectURL(url);
-  }, [filteredRecords, categoryLabels, t]);
+  }, [
+    filteredRecords,
+    categoryLabels,
+    isHi,
+    t,
+  ]);
 
   // =====================================================
-  // PDF
+  // PDF EXPORT
   // =====================================================
 
   const exportPDF = useCallback(() => {
+    if (!filteredRecords.length) {
+      window.alert(
+        isHi
+          ? "PDF बनाने के लिए कोई रिकॉर्ड नहीं है।"
+          : "There are no records to export."
+      );
+
+      return;
+    }
+
     const headers = [
       t.date,
       t.category,
@@ -368,9 +531,9 @@ export function HomeSection({
       (record) => [
         record.date,
         categoryLabels[
-        record.category as keyof typeof categoryLabels
-        ],
-        record.note,
+          record.category as keyof typeof categoryLabels
+        ] || record.category,
+        record.note || "—",
         fmt(record.amount),
       ]
     );
@@ -383,14 +546,49 @@ export function HomeSection({
         <title>${t.homeTitle}</title>
 
         <style>
+          * {
+            box-sizing: border-box;
+          }
+
           body {
             font-family: Arial, sans-serif;
             padding: 24px;
-            color: #111;
+            color: #111827;
           }
 
           h2 {
+            margin: 0 0 5px;
+          }
+
+          .date {
+            color: #6b7280;
+            font-size: 11px;
+            margin-bottom: 18px;
+          }
+
+          .summary {
+            display: grid;
+            grid-template-columns:
+              repeat(3, 1fr);
+            gap: 10px;
             margin-bottom: 20px;
+          }
+
+          .box {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 12px;
+          }
+
+          .label {
+            color: #6b7280;
+            font-size: 10px;
+          }
+
+          .value {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 4px;
           }
 
           table {
@@ -408,12 +606,26 @@ export function HomeSection({
 
           td {
             padding: 7px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom:
+              1px solid #e5e7eb;
+          }
+
+          .amount {
+            text-align: right;
+            font-weight: bold;
           }
 
           .total {
-            margin-top: 20px;
+            margin-top: 18px;
+            text-align: right;
+            font-size: 15px;
             font-weight: bold;
+          }
+
+          @media print {
+            body {
+              padding: 10px;
+            }
           }
         </style>
       </head>
@@ -422,38 +634,94 @@ export function HomeSection({
 
         <h2>${t.homeTitle}</h2>
 
+        <div class="date">
+          ${
+            isHi
+              ? "रिपोर्ट तारीख"
+              : "Report Date"
+          }: ${getToday()}
+        </div>
+
+        <div class="summary">
+
+          <div class="box">
+            <div class="label">
+              ${t.amount}
+            </div>
+
+            <div class="value">
+              ${fmt(filteredTotal)}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              ${
+                isHi
+                  ? "रिकॉर्ड"
+                  : "Records"
+              }
+            </div>
+
+            <div class="value">
+              ${filteredRecords.length}
+            </div>
+          </div>
+
+          <div class="box">
+            <div class="label">
+              ${
+                isHi
+                  ? "दैनिक औसत"
+                  : "Daily Average"
+              }
+            </div>
+
+            <div class="value">
+              ${fmt(dailyAvg)}
+            </div>
+          </div>
+
+        </div>
+
         <table>
+
           <thead>
             <tr>
               ${headers
-        .map(
-          (h) =>
-            `<th>${h}</th>`
-        )
-        .join("")}
+                .map(
+                  (header) =>
+                    `<th>${header}</th>`
+                )
+                .join("")}
             </tr>
           </thead>
 
           <tbody>
             ${rows
-        .map(
-          (row) => `
-                  <tr>
-                    ${row
               .map(
-                (cell) =>
-                  `<td>${cell}</td>`
-              )
-              .join("")}
+                (row) => `
+                  <tr>
+                    <td>${row[0]}</td>
+                    <td>${row[1]}</td>
+                    <td>${row[2]}</td>
+                    <td class="amount">
+                      ${row[3]}
+                    </td>
                   </tr>
                 `
-        )
-        .join("")}
+              )
+              .join("")}
           </tbody>
+
         </table>
 
         <div class="total">
-          Total: ${fmt(monthTotal)}
+          ${
+            isHi
+              ? "कुल खर्च"
+              : "Total Expense"
+          }: ${fmt(filteredTotal)}
         </div>
 
       </body>
@@ -463,15 +731,16 @@ export function HomeSection({
     const win = window.open(
       "",
       "_blank",
-      "width=900,height=600"
+      "width=900,height=700"
     );
 
     if (!win) {
       window.alert(
-        lang === "hi"
-          ? "Popup block हो गया।"
-          : "Popup blocked."
+        isHi
+          ? "Popup block हो गया। कृपया browser में popup allow करें।"
+          : "Popup was blocked. Please allow popups in your browser."
       );
+
       return;
     }
 
@@ -485,8 +754,9 @@ export function HomeSection({
   }, [
     filteredRecords,
     categoryLabels,
-    lang,
-    monthTotal,
+    dailyAvg,
+    filteredTotal,
+    isHi,
     t,
   ]);
 
@@ -504,48 +774,83 @@ export function HomeSection({
       <SectionHeader
         title={t.homeTitle}
         sub={
-          lang === "hi"
+          isHi
             ? "अपने घर के दैनिक खर्चों को आसानी से ट्रैक करें"
             : "Track and manage your daily household expenses"
         }
       />
 
       {/* =================================================
-          MAIN TOP AREA
+          TOP AREA
       ================================================== */}
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-4 lg:gap-5 mb-5">
 
         {/* =================================================
-            ADD EXPENSE CARD
+            FORM
         ================================================== */}
 
         <FormCard>
 
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center justify-between gap-3 mb-5">
 
-            
+            <div className="flex items-center gap-3">
 
-            <div>
-              <h2 className="text-base font-bold text-[var(--sk-text)]">
-                {t.addExpense}
-              </h2>
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-green-500/15 text-green-400">
+                {editingId ? (
+                  <Pencil size={18} />
+                ) : (
+                  <Plus size={18} />
+                )}
+              </div>
 
-              <p className="text-xs text-[var(--sk-muted)] mt-0.5">
-                {lang === "hi"
-                  ? "नया खर्च रिकॉर्ड जोड़ें"
-                  : "Add a new household expense"}
-              </p>
+              <div>
+
+                <h2 className="text-base font-bold text-[var(--sk-text)]">
+                  {editingId
+                    ? isHi
+                      ? "खर्च रिकॉर्ड संपादित करें"
+                      : "Edit Expense"
+                    : t.addExpense}
+                </h2>
+
+                <p className="text-xs text-[var(--sk-muted)] mt-0.5">
+                  {editingId
+                    ? isHi
+                      ? "मौजूदा रिकॉर्ड की जानकारी बदलें"
+                      : "Update the existing expense record"
+                    : isHi
+                      ? "नया खर्च रिकॉर्ड जोड़ें"
+                      : "Add a new household expense"}
+                </p>
+
+              </div>
+
             </div>
+
+            {editingId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-[var(--sk-muted)] hover:bg-white/5 hover:text-[var(--sk-text)]"
+              >
+                <X size={14} />
+                {isHi
+                  ? "रद्द करें"
+                  : "Cancel"}
+              </button>
+            )}
 
           </div>
 
           <form
-            onSubmit={onAddRecord}
+            onSubmit={onSubmit}
             className="space-y-4"
           >
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+              {/* DATE */}
 
               <InputGroup label={t.date}>
                 <input
@@ -562,6 +867,8 @@ export function HomeSection({
                 />
               </InputGroup>
 
+              {/* CATEGORY */}
+
               <InputGroup label={t.category}>
                 <select
                   className={`${selectCls} w-full`}
@@ -569,24 +876,29 @@ export function HomeSection({
                   onChange={(e) =>
                     setForm((current) => ({
                       ...current,
-                      category: e.target.value,
+                      category:
+                        e.target.value,
                     }))
                   }
                 >
-                  {categories.map((key) => (
-                    <option
-                      key={key}
-                      value={key}
-                    >
-                      {
-                        categoryLabels[
-                        key as keyof typeof categoryLabels
-                        ]
-                      }
-                    </option>
-                  ))}
+                  {categories.map(
+                    (key) => (
+                      <option
+                        key={key}
+                        value={key}
+                      >
+                        {
+                          categoryLabels[
+                            key as keyof typeof categoryLabels
+                          ]
+                        }
+                      </option>
+                    )
+                  )}
                 </select>
               </InputGroup>
+
+              {/* AMOUNT */}
 
               <InputGroup label={t.amount}>
                 <input
@@ -599,19 +911,22 @@ export function HomeSection({
                   onChange={(e) =>
                     setForm((current) => ({
                       ...current,
-                      amount: e.target.value,
+                      amount:
+                        e.target.value,
                     }))
                   }
                   required
                 />
               </InputGroup>
 
+              {/* NOTE */}
+
               <InputGroup label={t.note}>
                 <input
                   type="text"
                   className={`${inputCls} w-full`}
                   placeholder={
-                    lang === "hi"
+                    isHi
                       ? "दूध, सब्जी, बिजली बिल..."
                       : "Milk, vegetables, bill..."
                   }
@@ -633,16 +948,44 @@ export function HomeSection({
                 type="submit"
                 className={`${btnPrimary} w-full sm:w-auto justify-center px-6`}
               >
-                 {t.addExpense}
+                {editingId ? (
+                  <Save size={15} />
+                ) : (
+                  <Plus size={15} />
+                )}
+
+                {editingId
+                  ? isHi
+                    ? "अपडेट करें"
+                    : "Update Expense"
+                  : t.addExpense}
               </button>
 
-              <button
-                type="button"
-                className={`${btnSecondary} w-full sm:w-auto justify-center px-6`}
-                onClick={clearAllRecords}
-              >
-                {t.clearList}
-              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  className={`${btnSecondary} w-full sm:w-auto justify-center px-6`}
+                  onClick={resetForm}
+                >
+                  <X size={15} />
+
+                  {isHi
+                    ? "रद्द करें"
+                    : "Cancel"}
+                </button>
+              )}
+
+              {!editingId && (
+                <button
+                  type="button"
+                  className={`${btnSecondary} w-full sm:w-auto justify-center px-6`}
+                  onClick={clearAllRecords}
+                >
+                  <Trash2 size={15} />
+
+                  {t.clearList}
+                </button>
+              )}
 
             </div>
 
@@ -651,17 +994,18 @@ export function HomeSection({
         </FormCard>
 
         {/* =================================================
-            KPI AREA
+            KPI
         ================================================== */}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-3">
 
           <KpiBox
             label={t.monthTotal}
-            value={fmt(monthTotal)}
+            value={fmt(filteredTotal)}
             bar
             barPct={Math.min(
-              (monthTotal / 20000) * 100,
+              (filteredTotal / 20000) *
+                100,
               100
             )}
           />
@@ -681,12 +1025,10 @@ export function HomeSection({
       </div>
 
       {/* =================================================
-          RECORDS SECTION
+          RECORDS
       ================================================== */}
 
       <FormCard>
-
-        {/* RECORD HEADER */}
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
 
@@ -697,24 +1039,31 @@ export function HomeSection({
             </div>
 
             <div>
+
               <h2 className="text-sm font-bold text-[var(--sk-text)]">
-                {lang === "hi"
+                {isHi
                   ? "खर्च रिकॉर्ड"
                   : "Expense Records"}
               </h2>
 
               <p className="text-[11px] text-[var(--sk-muted)]">
                 {filteredRecords.length}{" "}
-                {lang === "hi"
+                {isHi
                   ? "रिकॉर्ड"
                   : "records"}
               </p>
+
             </div>
 
           </div>
 
           <div className="text-xs text-[var(--sk-muted)]">
-            {fmt(monthTotal)}
+            {isHi
+              ? "कुल"
+              : "Total"}{" "}
+            <span className="font-bold text-[var(--sk-text2)]">
+              {fmt(filteredTotal)}
+            </span>
           </div>
 
         </div>
@@ -727,10 +1076,13 @@ export function HomeSection({
 
           <div className="flex items-center gap-2 mb-3">
 
-            <Search size={15} className="text-green-400" />
+            <Search
+              size={15}
+              className="text-green-400"
+            />
 
             <span className="text-xs font-semibold text-[var(--sk-text2)]">
-              {lang === "hi"
+              {isHi
                 ? "खोजें और फ़िल्टर करें"
                 : "Search & Filter"}
             </span>
@@ -751,13 +1103,15 @@ export function HomeSection({
               <input
                 className={`${inputCls} w-full pl-9`}
                 placeholder={
-                  lang === "hi"
+                  isHi
                     ? "खर्च खोजें..."
                     : "Search expenses..."
                 }
                 value={search}
                 onChange={(e) =>
-                  setSearch(e.target.value)
+                  setSearch(
+                    e.target.value
+                  )
                 }
               />
 
@@ -769,30 +1123,32 @@ export function HomeSection({
               className={`${selectCls} w-full`}
               value={dateFilter}
               onChange={(e) =>
-                setDateFilter(e.target.value)
+                setDateFilter(
+                  e.target.value as DateFilter
+                )
               }
             >
 
               <option value="all">
-                {lang === "hi"
+                {isHi
                   ? "सभी तारीख"
                   : "All Dates"}
               </option>
 
               <option value="today">
-                {lang === "hi"
+                {isHi
                   ? "आज"
                   : "Today"}
               </option>
 
               <option value="month">
-                {lang === "hi"
+                {isHi
                   ? "इस महीने"
                   : "This Month"}
               </option>
 
               <option value="year">
-                {lang === "hi"
+                {isHi
                   ? "इस साल"
                   : "This Year"}
               </option>
@@ -806,13 +1162,15 @@ export function HomeSection({
               min="0"
               className={`${inputCls} w-full`}
               placeholder={
-                lang === "hi"
+                isHi
                   ? "न्यूनतम ₹"
                   : "Min ₹"
               }
               value={minAmount}
               onChange={(e) =>
-                setMinAmount(e.target.value)
+                setMinAmount(
+                  e.target.value
+                )
               }
             />
 
@@ -823,13 +1181,15 @@ export function HomeSection({
               min="0"
               className={`${inputCls} w-full`}
               placeholder={
-                lang === "hi"
+                isHi
                   ? "अधिकतम ₹"
                   : "Max ₹"
               }
               value={maxAmount}
               onChange={(e) =>
-                setMaxAmount(e.target.value)
+                setMaxAmount(
+                  e.target.value
+                )
               }
             />
 
@@ -840,7 +1200,7 @@ export function HomeSection({
               className={`${btnSecondary} w-full justify-center`}
               onClick={clearFilters}
             >
-              {lang === "hi"
+              {isHi
                 ? "फ़िल्टर साफ़ करें"
                 : "Clear Filters"}
             </button>
@@ -850,15 +1210,16 @@ export function HomeSection({
         </div>
 
         {/* =================================================
-            EXPORT BAR
+            EXPORT
         ================================================== */}
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
 
           <div className="text-xs text-[var(--sk-muted)]">
-            {lang === "hi"
+            {isHi
               ? "दिखाए जा रहे रिकॉर्ड"
               : "Showing records"}{" "}
+
             <span className="font-semibold text-[var(--sk-text2)]">
               {filteredRecords.length}
             </span>
@@ -872,6 +1233,7 @@ export function HomeSection({
               onClick={exportCSV}
             >
               <Download size={13} />
+
               {t.csvExport}
             </button>
 
@@ -881,6 +1243,7 @@ export function HomeSection({
               onClick={exportPDF}
             >
               <FileText size={13} />
+
               {t.pdfDownload}
             </button>
 
@@ -894,7 +1257,7 @@ export function HomeSection({
 
         <div className="w-full overflow-x-auto rounded-xl border border-[var(--sk-border)]">
 
-          <table className="min-w-[700px] w-full text-sm">
+          <table className="min-w-[800px] w-full text-sm">
 
             <thead>
 
@@ -916,10 +1279,16 @@ export function HomeSection({
                   {t.amount}
                 </th>
 
-                <th className="text-center py-3 px-3 font-semibold w-14">
-                  {lang === "hi"
-                    ? "कार्य"
-                    : "Action"}
+                <th className="text-center py-3 px-3 font-semibold">
+                  {isHi
+                    ? "संपादित"
+                    : "Edit"}
+                </th>
+
+                <th className="text-center py-3 px-3 font-semibold">
+                  {isHi
+                    ? "हटाएं"
+                    : "Delete"}
                 </th>
 
               </tr>
@@ -928,98 +1297,151 @@ export function HomeSection({
 
             <tbody>
 
-              {filteredRecords.map((record) => (
+              {filteredRecords.map(
+                (record) => (
 
-                <tr
-                  key={record.id}
-                  className="border-b border-white/5 last:border-b-0 hover:bg-white/[0.025] transition-colors"
-                >
+                  <tr
+                    key={record.id}
+                    className="border-b border-white/5 last:border-b-0 hover:bg-white/[0.025] transition-colors"
+                  >
 
-                  {/* DATE */}
+                    {/* DATE */}
 
-                  <td className="py-3 px-3 text-[var(--sk-faint)] text-xs font-mono whitespace-nowrap">
-                    {record.date
-                      .split("-")
-                      .reverse()
-                      .join("/")}
-                  </td>
+                    <td className="py-3 px-3 text-[var(--sk-faint)] text-xs font-mono whitespace-nowrap">
+                      {record.date
+                        ? record.date
+                            .split("-")
+                            .reverse()
+                            .join("/")
+                        : "—"}
+                    </td>
 
-                  {/* CATEGORY */}
+                    {/* CATEGORY */}
 
-                  <td className="py-3 px-3">
+                    <td className="py-3 px-3">
 
-                    <span className="inline-flex items-center rounded-full bg-green-500/10 border border-green-500/15 px-2.5 py-1 text-[10px] font-semibold text-green-400 whitespace-nowrap">
+                      <span className="inline-flex items-center rounded-full bg-green-500/10 border border-green-500/15 px-2.5 py-1 text-[10px] font-semibold text-green-400 whitespace-nowrap">
 
-                      {
-                        categoryLabels[
-                        record.category as keyof typeof categoryLabels
-                        ]
-                      }
+                        {
+                          categoryLabels[
+                            record.category as keyof typeof categoryLabels
+                          ] ||
+                            record.category
+                        }
 
-                    </span>
+                      </span>
 
-                  </td>
+                    </td>
 
-                  {/* NOTE */}
+                    {/* NOTE */}
 
-                  <td className="py-3 px-3 text-[var(--sk-text2)] text-xs max-w-[300px]">
+                    <td className="py-3 px-3 text-[var(--sk-text2)] text-xs max-w-[300px]">
 
-                    <div className="truncate">
-                      {record.note || "—"}
-                    </div>
+                      <div
+                        className="truncate"
+                        title={
+                          record.note ||
+                          ""
+                        }
+                      >
+                        {record.note ||
+                          "—"}
+                      </div>
 
-                  </td>
+                    </td>
 
-                  {/* AMOUNT */}
+                    {/* AMOUNT */}
 
-                  <td className="py-3 px-3 text-right">
+                    <td className="py-3 px-3 text-right">
 
-                    <span className="font-bold font-mono text-red-400 text-xs whitespace-nowrap">
-                      {fmt(record.amount)}
-                    </span>
+                      <span className="font-bold font-mono text-red-400 text-xs whitespace-nowrap">
+                        {fmt(
+                          record.amount
+                        )}
+                      </span>
 
-                  </td>
+                    </td>
 
-                  {/* ACTION */}
+                    {/* EDIT */}
 
-                  <td className="py-3 px-3 text-center">
+                    <td className="py-3 px-3 text-center">
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onDelete(record.id)
-                      }
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[var(--sk-dim)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                      title={
-                        lang === "hi"
-                          ? "हटाएं"
-                          : "Delete"
-                      }
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startEdit(record)
+                        }
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+                        title={
+                          isHi
+                            ? "संपादित करें"
+                            : "Edit"
+                        }
+                        aria-label={
+                          isHi
+                            ? "संपादित करें"
+                            : "Edit"
+                        }
+                      >
+                        <Pencil
+                          size={15}
+                        />
+                      </button>
 
-                  </td>
+                    </td>
 
-                </tr>
+                    {/* DELETE */}
 
-              ))}
+                    <td className="py-3 px-3 text-center">
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onDelete(
+                            record.id
+                          )
+                        }
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                        title={
+                          isHi
+                            ? "हटाएं"
+                            : "Delete"
+                        }
+                        aria-label={
+                          isHi
+                            ? "हटाएं"
+                            : "Delete"
+                        }
+                      >
+                        <Trash2
+                          size={15}
+                        />
+                      </button>
+
+                    </td>
+
+                  </tr>
+                )
+              )}
 
               {/* EMPTY */}
 
-              {filteredRecords.length === 0 && (
+              {filteredRecords.length ===
+                0 && (
 
                 <tr>
 
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="py-12 text-center"
                   >
 
                     <div className="flex flex-col items-center justify-center gap-2">
 
                       <div className="w-10 h-10 rounded-full bg-[var(--sk-hover)] flex items-center justify-center text-[var(--sk-dim)]">
-                        <Search size={18} />
+                        <Search
+                          size={18}
+                        />
                       </div>
 
                       <p className="text-xs font-medium text-[var(--sk-muted)]">
@@ -1027,7 +1449,7 @@ export function HomeSection({
                       </p>
 
                       <p className="text-[10px] text-[var(--sk-dim)]">
-                        {lang === "hi"
+                        {isHi
                           ? "फ़िल्टर बदलकर फिर से प्रयास करें"
                           : "Try changing your filters"}
                       </p>
@@ -1037,7 +1459,6 @@ export function HomeSection({
                   </td>
 
                 </tr>
-
               )}
 
             </tbody>

@@ -3,20 +3,18 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 
-import { FarmRecord, Lang } from "../../lib/types";
+import type { FarmRecord, Lang } from "../../lib/types";
 import { fmt } from "../../lib/utils";
 
-import { FARM_STRINGS } from "../../lib/farmI18n";
-
-import { FormCard } from "../common/UI";
-
-import { FarmFilters } from "./FarmFilters";
-
 import {
+  FARM_STRINGS,
   cropLabel,
   typeLabel,
   unitLabel,
 } from "../../lib/farmI18n";
+
+import { FormCard } from "../common/UI";
+import { FarmFilters } from "./FarmFilters";
 
 interface FarmTableProps {
   filteredRecords: FarmRecord[];
@@ -24,16 +22,25 @@ interface FarmTableProps {
   lang: Lang;
 
   cropSearch: string;
-  setCropSearch: Dispatch<SetStateAction<string>>;
+  setCropSearch: Dispatch<
+    SetStateAction<string>
+  >;
 
   typeFilter: "all" | FarmRecord["type"];
   setTypeFilter: Dispatch<
     SetStateAction<"all" | FarmRecord["type"]>
   >;
 
-  dateFilter: "all" | "today" | "month" | "year";
+  dateFilter:
+    | "all"
+    | "today"
+    | "month"
+    | "year";
+
   setDateFilter: Dispatch<
-    SetStateAction<"all" | "today" | "month" | "year">
+    SetStateAction<
+      "all" | "today" | "month" | "year"
+    >
   >;
 
   onEdit: (record: FarmRecord) => void;
@@ -55,88 +62,198 @@ export function FarmTable({
   const farmT = FARM_STRINGS[lang];
 
   /*
-   * ---------------------------------------------------------
-   * DETAILS
-   * ---------------------------------------------------------
+ * ---------------------------------------------------------
+ * DETAILS
+ * ---------------------------------------------------------
+ */
+
+const getDetails = (record: FarmRecord) => {
+  /*
+   * Note has highest priority
    */
+  if (record.note?.trim()) {
+    return record.note;
+  }
 
-  const getDetails = (record: FarmRecord) => {
-    if (record.note?.trim()) {
-      return record.note;
+  /*
+   * Expense
+   * Example:
+   * बीज • 20 Kg × ₹50
+   * खाद • 2 Quintal × ₹2500
+   */
+  if (record.type === "Expense") {
+    const category = record.expenseCategory || "-";
+    const quantity = Number(record.quantity) || 0;
+    const price = Number(record.price) || 0;
+
+    if (quantity > 0 && price > 0) {
+      return `${category} • ${quantity} ${unitLabel(
+        lang,
+        record.unit
+      )} × ₹${price.toLocaleString("en-IN")}`;
     }
 
-    if (record.type === "Expense") {
-      return record.expenseCategory || "-";
+    if (quantity > 0) {
+      return `${category} • ${quantity} ${unitLabel(
+        lang,
+        record.unit
+      )}`;
     }
 
-    if (record.type === "Yield") {
-      return record.quantity
-        ? `${record.quantity} ${unitLabel(lang, record.unit)}`
-        : "-";
-    }
+    return category;
+  }
 
-    if (record.type === "Sale") {
-      if (record.quantity && record.price) {
-        return `${record.quantity} ${unitLabel(
-          lang,
-          record.unit
-        )} × ₹${Number(record.price).toLocaleString("en-IN")}`;
-      }
+  /*
+   * Production / Yield
+   */
+  if (record.type === "Yield") {
+    const quantity = Number(record.quantity) || 0;
 
+    if (quantity <= 0) {
       return "-";
     }
 
+    return `${quantity} ${unitLabel(
+      lang,
+      record.unit
+    )}`;
+  }
+
+  /*
+   * Sale
+   */
+  if (record.type === "Sale") {
+    const quantity = Number(record.quantity) || 0;
+    const price = Number(record.price) || 0;
+
+    if (quantity > 0 && price > 0) {
+      return `${quantity} ${unitLabel(
+        lang,
+        record.unit
+      )} × ₹${price.toLocaleString("en-IN")}`;
+    }
+
     return "-";
-  };
+  }
+
+  return "-";
+};
+
+/*
+ * ---------------------------------------------------------
+ * TYPE BADGE
+ * ---------------------------------------------------------
+ */
+
+const getTypeClass = (
+  type: FarmRecord["type"]
+) => {
+  if (type === "Expense") {
+    return `
+      bg-red-500/15
+      text-red-400
+      border-red-500/20
+    `;
+  }
+
+  if (type === "Yield") {
+    return `
+      bg-cyan-500/15
+      text-cyan-400
+      border-cyan-500/20
+    `;
+  }
+
+  return `
+    bg-green-500/15
+    text-green-400
+    border-green-500/20
+  `;
+};
+ 
+/*
+ * ---------------------------------------------------------
+ * AMOUNT / QUANTITY
+ * ---------------------------------------------------------
+ */
+const getAmountClass = (
+  type: FarmRecord["type"]
+) => {
+  if (type === "Expense") {
+    return "text-red-400";
+  }
+
+  if (type === "Sale") {
+    return "text-green-400";
+  }
+
+  return "text-cyan-400";
+};
+
+const getAmount = (record: FarmRecord) => {
+  /*
+   * Yield
+   */
+  if (record.type === "Yield") {
+    const quantity = Number(record.quantity) || 0;
+
+    return quantity > 0
+      ? `${quantity} ${unitLabel(
+          lang,
+          record.unit
+        )}`
+      : "-";
+  }
+
+  /*
+   * Sale
+   */
+  if (record.type === "Sale") {
+    const amount =
+      Number(record.amount) ||
+      Number(record.quantity || 0) *
+        Number(record.price || 0);
+
+    return amount > 0
+      ? fmt(amount)
+      : "-";
+  }
+
+  /*
+   * Expense
+   */
+  if (record.type === "Expense") {
+    const savedAmount = Number(record.amount) || 0;
+
+    const calculatedAmount =
+      Number(record.quantity || 0) *
+      Number(record.price || 0);
+
+    const amount =
+      savedAmount > 0
+        ? savedAmount
+        : calculatedAmount;
+
+    return amount > 0
+      ? fmt(amount)
+      : "-";
+  }
+
+  return "-";
+};
+
 
   /*
    * ---------------------------------------------------------
-   * AMOUNT
+   * UI
    * ---------------------------------------------------------
    */
-
-  const getAmount = (record: FarmRecord) => {
-    if (record.type === "Yield") {
-      return record.quantity
-        ? `${record.quantity} ${unitLabel(lang, record.unit)}`
-        : "-";
-    }
-
-    if (record.type === "Sale") {
-      const amount =
-        Number(record.amount) ||
-        Number(record.quantity) * Number(record.price);
-
-      return amount > 0 ? fmt(amount) : "-";
-    }
-
-    return fmt(Number(record.amount) || 0);
-  };
-
-  /*
-   * ---------------------------------------------------------
-   * TYPE BADGE
-   * ---------------------------------------------------------
-   */
-
-  const getTypeClass = (type: FarmRecord["type"]) => {
-    if (type === "Expense") {
-      return "bg-red-500/15 text-red-400 border-red-500/20";
-    }
-
-    if (type === "Yield") {
-      return "bg-cyan-500/15 text-cyan-400 border-cyan-500/20";
-    }
-
-    return "bg-green-500/15 text-green-400 border-green-500/20";
-  };
 
   return (
     <FormCard>
-
-      {/* =====================================================
+      {/* ===================================================
           FILTERS
-      ===================================================== */}
+      =================================================== */}
 
       <FarmFilters
         lang={lang}
@@ -150,193 +267,278 @@ export function FarmTable({
         filteredRecords={filteredRecords}
       />
 
-      {/* =====================================================
+      {/* ===================================================
           TABLE
-      ===================================================== */}
+      =================================================== */}
 
       <div className="mt-3 w-full overflow-x-auto">
-
-        <table className="min-w-[850px] w-full text-xs">
-
+        <table className="min-w-[900px] w-full text-xs">
           {/* =================================================
               HEADER
           ================================================= */}
 
           <thead>
-
             <tr className="border-b border-[var(--sk-border)]">
+              {/* DATE */}
 
-              <th className="py-3 px-2 text-left font-semibold text-[var(--sk-faint)]">
+              <th className="
+                px-2
+                py-3
+                text-left
+                font-semibold
+                text-[var(--sk-faint)]
+              ">
                 {farmT.date}
               </th>
 
-              <th className="py-3 px-2 text-left font-semibold text-[var(--sk-faint)]">
-                {farmT.type}
-              </th>
+              {/* CROP */}
 
-              <th className="py-3 px-2 text-left font-semibold text-[var(--sk-faint)]">
+              <th className="
+                px-2
+                py-3
+                text-left
+                font-semibold
+                text-[var(--sk-faint)]
+              ">
                 {farmT.crop}
               </th>
 
-              <th className="py-3 px-2 text-left font-semibold text-[var(--sk-faint)]">
+              {/* TYPE */}
+
+              <th className="
+                px-2
+                py-3
+                text-left
+                font-semibold
+                text-[var(--sk-faint)]
+              ">
+                {farmT.type}
+              </th>
+
+              {/* DETAILS */}
+
+              <th className="
+                px-2
+                py-3
+                text-left
+                font-semibold
+                text-[var(--sk-faint)]
+              ">
                 {farmT.details}
               </th>
 
-              <th className="py-3 px-2 text-left font-semibold text-[var(--sk-faint)]">
-                {farmT.amount} (₹)
+              {/* AMOUNT */}
+
+              <th className="
+                px-2
+                py-3
+                text-left
+                font-semibold
+                text-[var(--sk-faint)]
+              ">
+                {farmT.amount}
               </th>
 
-              <th className="py-3 px-2 text-center font-semibold text-[var(--sk-faint)]">
-                {farmT.action}
+              {/* EDIT */}
+
+              <th className="
+                px-2
+                py-3
+                text-center
+                font-semibold
+                text-[var(--sk-faint)]
+              ">
+                {lang === "hi"
+                  ? "संपादित"
+                  : "Edit"}
               </th>
 
+              {/* DELETE */}
+
+              <th className="
+                px-2
+                py-3
+                text-center
+                font-semibold
+                text-[var(--sk-faint)]
+              ">
+                {lang === "hi"
+                  ? "हटाएं"
+                  : "Delete"}
+              </th>
             </tr>
-
           </thead>
-
 
           {/* =================================================
               BODY
           ================================================= */}
 
           <tbody>
+            {filteredRecords.map(
+              (record) => (
+                <tr
+                  key={record.id}
+                  className="
+                    border-b
+                    border-white/5
+                    transition-colors
+                    hover:bg-white/[0.03]
+                  "
+                >
+                  {/* DATE */}
 
-            {filteredRecords.map((record) => (
+                  <td className="px-2 py-3">
+                    <span className="
+                      font-mono
+                      text-[var(--sk-text2)]
+                    ">
+                      {record.date
+                        ? record.date
+                            .split("-")
+                            .reverse()
+                            .join("/")
+                        : "-"}
+                    </span>
+                  </td>
 
-              <tr
-                key={record.id}
-                className="
-                  border-b
-                  border-white/5
-                  transition-colors
-                  hover:bg-white/[0.03]
-                "
-              >
+                  {/* CROP */}
 
-                {/* ===========================================
-                    DATE
-                =========================================== */}
+                  <td className="px-2 py-3">
+                    <div className="
+                      font-semibold
+                      text-[var(--sk-text)]
+                    ">
+                      {cropLabel(
+                        lang,
+                        record.crop
+                      )}
+                    </div>
 
-                <td className="py-3 px-2">
+                    {(record.field ||
+                      record.area) && (
+                      <div className="
+                        mt-0.5
+                        text-[10px]
+                        text-[var(--sk-faint)]
+                      ">
+                        {record.field ||
+                          ""}
 
-                  <span className="font-mono text-[var(--sk-text2)]">
+                        {record.field &&
+                        record.area
+                          ? " • "
+                          : ""}
 
-                    {record.date
-                      ? record.date
-                          .split("-")
-                          .reverse()
-                          .join("/")
-                      : "-"}
+                        {record.area
+                          ? `${record.area} ${
+                              record.areaUnit ||
+                              ""
+                            }`
+                          : ""}
+                      </div>
+                    )}
 
-                  </span>
+                    {record.season && (
+                      <div className="
+                        mt-0.5
+                        text-[9px]
+                        text-[var(--sk-dim)]
+                      ">
+                        {record.season}
+                      </div>
+                    )}
+                  </td>
 
-                </td>
+                  {/* TYPE */}
 
+                  <td className="px-2 py-3">
+                    <span
+                      className={`
+                        inline-flex
+                        items-center
+                        rounded-full
+                        border
+                        px-2.5
+                        py-1
+                        text-[10px]
+                        font-bold
+                        whitespace-nowrap
+                        ${getTypeClass(
+                          record.type
+                        )}
+                      `}
+                    >
+                      {typeLabel(
+                        lang,
+                        record.type
+                      )}
+                    </span>
+                  </td>
 
-                {/* ===========================================
-                    TYPE
-                =========================================== */}
+                  {/* DETAILS */}
 
-                <td className="py-3 px-2">
+                  <td className="
+                    max-w-[280px]
+                    px-2
+                    py-3
+                  ">
+                    <div
+                      className="
+                        truncate
+                        text-[var(--sk-muted)]
+                      "
+                      title={getDetails(
+                        record
+                      )}
+                    >
+                      {getDetails(record)}
+                    </div>
+                  </td>
 
-                  <span
-                    className={`
-                      inline-flex
-                      items-center
-                      px-2.5
-                      py-1
-                      rounded-full
-                      border
-                      text-[10px]
-                      font-bold
-                      whitespace-nowrap
-                      ${getTypeClass(record.type)}
-                    `}
-                  >
-                    {typeLabel(lang, record.type)}
-                  </span>
+                  {/* AMOUNT */}
 
-                </td>
+                  <td className="px-2 py-3">
+                    <span
+                      className={`
+                        font-bold
+                        ${getAmountClass(
+                          record.type
+                        )}
+                      `}
+                    >
+                      {getAmount(record)}
+                    </span>
+                  </td>
 
+                  {/* EDIT */}
 
-                {/* ===========================================
-                    CROP
-                =========================================== */}
-
-                <td className="py-3 px-2">
-
-                  <span className="font-semibold text-[var(--sk-text)]">
-                    {cropLabel(lang, record.crop)}
-                  </span>
-
-                </td>
-
-
-                {/* ===========================================
-                    DETAILS
-                =========================================== */}
-
-                <td className="py-3 px-2 max-w-[260px]">
-
-                  <div
-                    className="
-                      truncate
-                      text-[var(--sk-muted)]
-                    "
-                    title={getDetails(record)}
-                  >
-                    {getDetails(record)}
-                  </div>
-
-                </td>
-
-
-                {/* ===========================================
-                    AMOUNT
-                =========================================== */}
-
-                <td className="py-3 px-2">
-
-                  <span
-                    className={`
-                      font-bold
-                      ${
-                        record.type === "Expense"
-                          ? "text-red-400"
-                          : record.type === "Sale"
-                            ? "text-green-400"
-                            : "text-cyan-400"
-                      }
-                    `}
-                  >
-                    {getAmount(record)}
-                  </span>
-
-                </td>
-
-
-                {/* ===========================================
-                    ACTION
-                =========================================== */}
-
-                <td className="py-3 px-2">
-
-                  <div className="flex items-center justify-center gap-3">
-
-                    {/* EDIT */}
-
+                  <td className="
+                    px-2
+                    py-3
+                    text-center
+                  ">
                     <button
                       type="button"
-                      onClick={() => onEdit(record)}
+                      onClick={() =>
+                        onEdit(record)
+                      }
                       className="
-                        p-1.5
+                        inline-flex
+                        items-center
+                        justify-center
                         rounded-md
+                        p-1.5
                         text-blue-400
+                        transition
                         hover:bg-blue-500/10
                         hover:text-blue-300
-                        transition
                       "
                       title={
+                        lang === "hi"
+                          ? "रिकॉर्ड संपादित करें"
+                          : "Edit Record"
+                      }
+                      aria-label={
                         lang === "hi"
                           ? "रिकॉर्ड संपादित करें"
                           : "Edit Record"
@@ -344,22 +546,37 @@ export function FarmTable({
                     >
                       <Pencil size={15} />
                     </button>
+                  </td>
 
+                  {/* DELETE */}
 
-                    {/* DELETE */}
-
+                  <td className="
+                    px-2
+                    py-3
+                    text-center
+                  ">
                     <button
                       type="button"
-                      onClick={() => onDelete(record.id)}
+                      onClick={() =>
+                        onDelete(record.id)
+                      }
                       className="
-                        p-1.5
+                        inline-flex
+                        items-center
+                        justify-center
                         rounded-md
+                        p-1.5
                         text-red-400
+                        transition
                         hover:bg-red-500/10
                         hover:text-red-300
-                        transition
                       "
                       title={
+                        lang === "hi"
+                          ? "रिकॉर्ड हटाएं"
+                          : "Delete Record"
+                      }
+                      aria-label={
                         lang === "hi"
                           ? "रिकॉर्ड हटाएं"
                           : "Delete Record"
@@ -367,26 +584,20 @@ export function FarmTable({
                     >
                       <Trash2 size={15} />
                     </button>
-
-                  </div>
-
-                </td>
-
-              </tr>
-
-            ))}
-
+                  </td>
+                </tr>
+              )
+            )}
 
             {/* =================================================
                 EMPTY STATE
             ================================================= */}
 
-            {filteredRecords.length === 0 && (
-
+            {filteredRecords.length ===
+              0 && (
               <tr>
-
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="
                     py-10
                     text-center
@@ -396,41 +607,30 @@ export function FarmTable({
                 >
                   {farmT.noRecords}
                 </td>
-
               </tr>
-
             )}
-
           </tbody>
-
         </table>
-
       </div>
 
-
-      {/* =====================================================
+      {/* ===================================================
           RECORD COUNT
-      ===================================================== */}
+      =================================================== */}
 
       {filteredRecords.length > 0 && (
-
-        <div
-          className="
-            mt-3
-            pt-3
-            border-t
-            border-white/5
-            text-[11px]
-            text-[var(--sk-dim)]
-          "
-        >
+        <div className="
+          mt-3
+          border-t
+          border-white/5
+          pt-3
+          text-[11px]
+          text-[var(--sk-dim)]
+        ">
           {lang === "hi"
             ? `कुल ${filteredRecords.length} रिकॉर्ड`
             : `Total ${filteredRecords.length} records`}
         </div>
-
       )}
-
     </FormCard>
   );
 }

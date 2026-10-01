@@ -43,11 +43,54 @@ const safeNumber = (value: unknown) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const getToday = () => new Date().toISOString().slice(0, 10);
+const getFarmExpenseAmount = (
+  record: FarmRecord
+) => {
+  if (record.type !== "Expense") return 0;
 
-const getMonth = () => getToday().slice(0, 7);
+  const quantity = safeNumber(record.quantity);
+  const price = safeNumber(record.price);
 
-const getYear = () => getToday().slice(0, 4);
+  const calculatedAmount =
+    quantity * price;
+
+  // New records: Quantity × Rate
+  if (calculatedAmount > 0) {
+    return calculatedAmount;
+  }
+
+  // Old records: saved amount
+  return safeNumber(record.amount);
+};
+
+const getFarmSaleAmount = (
+  record: FarmRecord
+) => {
+  if (record.type !== "Sale") return 0;
+
+  const quantity = safeNumber(record.quantity);
+  const price = safeNumber(record.price);
+
+  const calculatedAmount =
+    quantity * price;
+
+  // New records: Quantity × Rate
+  if (calculatedAmount > 0) {
+    return calculatedAmount;
+  }
+
+  // Old records: saved amount
+  return safeNumber(record.amount);
+};
+
+const getToday = () =>
+  new Date().toISOString().slice(0, 10);
+
+const getMonth = () =>
+  getToday().slice(0, 7);
+
+const getYear = () =>
+  getToday().slice(0, 4);
 
 const money = (value: number) =>
   `Rs. ${safeNumber(value).toLocaleString("en-IN")}`;
@@ -66,6 +109,7 @@ export function ReportsSection({
 
   const L = {
     title: isHindi ? "रिपोर्ट" : "Reports",
+
     subtitle: isHindi
       ? "घर, किराया और खेती की वित्तीय रिपोर्ट"
       : "Financial overview of home, rent and farm",
@@ -78,29 +122,67 @@ export function ReportsSection({
     pdf: "PDF",
     excel: "Excel",
     print: isHindi ? "प्रिंट" : "Print",
+    reset: isHindi ? "रीसेट" : "Reset",
 
     home: isHindi ? "घर खर्च" : "Home Expense",
+
     rent: isHindi ? "किराया" : "Rent",
-    received: isHindi ? "प्राप्त" : "Received",
+
+    received: isHindi ? "किराया प्राप्त" : "Rent Received",
+
     pending: isHindi ? "बाकी" : "Pending",
+
     farm: isHindi ? "खेती" : "Farm",
+
     sale: isHindi ? "बिक्री" : "Sale",
+
     expense: isHindi ? "खर्च" : "Expense",
+
+    yield: isHindi ? "उपज" : "Yield",
+
     profit: isHindi ? "लाभ" : "Profit",
+
     income: isHindi ? "कुल आय" : "Total Income",
-    totalExpense: isHindi ? "कुल खर्च" : "Total Expense",
-    balance: isHindi ? "नेट बैलेंस" : "Net Balance",
+
+    totalExpense: isHindi
+      ? "कुल खर्च"
+      : "Total Expense",
+
+    balance: isHindi
+      ? "नेट बैलेंस"
+      : "Net Balance",
 
     crops: isHindi ? "फसलें" : "Crops",
-    tenants: isHindi ? "किरायेदार" : "Tenants",
-    transactions: isHindi ? "लेनदेन" : "Transactions",
-    rentPaid: isHindi ? "भुगतान किराया" : "Rent Paid",
-    rentPending: isHindi ? "बाकी किराया" : "Rent Pending",
+
+    tenants: isHindi
+      ? "किरायेदार"
+      : "Tenants",
+
+    transactions: isHindi
+      ? "लेनदेन"
+      : "Transactions",
+
+    rentPaid: isHindi
+      ? "भुगतान किराया"
+      : "Rent Paid",
+
+    rentPending: isHindi
+      ? "बाकी किराया"
+      : "Rent Pending",
 
     filters: isHindi ? "फिल्टर" : "Filters",
-    allCrops: isHindi ? "सभी फसलें" : "All Crops",
-    allTenants: isHindi ? "सभी किरायेदार" : "All Tenants",
-    allCategories: isHindi ? "सभी श्रेणियां" : "All Categories",
+
+    allCrops: isHindi
+      ? "सभी फसलें"
+      : "All Crops",
+
+    allTenants: isHindi
+      ? "सभी किरायेदार"
+      : "All Tenants",
+
+    allCategories: isHindi
+      ? "सभी श्रेणियां"
+      : "All Categories",
 
     monthlyTrend: isHindi
       ? "मासिक वित्तीय ट्रेंड"
@@ -114,9 +196,13 @@ export function ReportsSection({
       ? "खर्च का विवरण"
       : "Expense Breakdown",
 
-    quickStats: isHindi ? "त्वरित जानकारी" : "Quick Stats",
+    quickStats: isHindi
+      ? "त्वरित जानकारी"
+      : "Quick Stats",
 
-    insights: isHindi ? "मुख्य जानकारी" : "Insights",
+    insights: isHindi
+      ? "मुख्य जानकारी"
+      : "Insights",
 
     recent: isHindi
       ? "हाल की गतिविधियां"
@@ -154,9 +240,17 @@ export function ReportsSection({
       ? "ट्रैक की गई फसलें"
       : "Tracked crops",
 
-    generated: isHindi ? "बनाया गया" : "Generated",
-    owner: isHindi ? "मालिक" : "Owner",
-    period: isHindi ? "अवधि" : "Period",
+    generated: isHindi
+      ? "बनाया गया"
+      : "Generated",
+
+    owner: isHindi
+      ? "मालिक"
+      : "Owner",
+
+    period: isHindi
+      ? "अवधि"
+      : "Period",
 
     rentBilled: isHindi
       ? "किराया बिल"
@@ -174,12 +268,151 @@ export function ReportsSection({
       ? "वित्तीय रिपोर्ट"
       : "Financial Report",
 
-    date: isHindi ? "दिनांक" : "Date",
-    tenant: isHindi ? "किरायेदार" : "Tenant",
-    amount: isHindi ? "राशि" : "Amount",
-    status: isHindi ? "स्थिति" : "Status",
-    type: isHindi ? "प्रकार" : "Type",
-    crop: isHindi ? "फसल" : "Crop",
+    date: isHindi
+      ? "दिनांक"
+      : "Date",
+
+    tenant: isHindi
+      ? "किरायेदार"
+      : "Tenant",
+
+    amount: isHindi
+      ? "राशि"
+      : "Amount",
+
+    status: isHindi
+      ? "स्थिति"
+      : "Status",
+
+    type: isHindi
+      ? "प्रकार"
+      : "Type",
+
+    crop: isHindi
+      ? "फसल"
+      : "Crop",
+
+    summary: isHindi
+      ? "सारांश"
+      : "Summary",
+
+    item: isHindi
+      ? "विवरण"
+      : "Item",
+
+    category: isHindi
+      ? "श्रेणी"
+      : "Category",
+
+    note: isHindi
+      ? "नोट"
+      : "Note",
+
+    rentAmount: isHindi
+      ? "किराया"
+      : "Rent",
+
+    previousReading: isHindi
+      ? "पिछली रीडिंग"
+      : "Previous Reading",
+
+    currentReading: isHindi
+      ? "वर्तमान रीडिंग"
+      : "Current Reading",
+
+    units: isHindi
+      ? "यूनिट"
+      : "Units",
+
+    ratePerUnit: isHindi
+      ? "प्रति यूनिट दर"
+      : "Rate Per Unit",
+
+    lightBill: isHindi
+      ? "लाइट बिल"
+      : "Light Bill",
+
+    totalBill: isHindi
+      ? "कुल बिल"
+      : "Total Bill",
+
+    paidAmount: isHindi
+      ? "भुगतान राशि"
+      : "Paid Amount",
+
+    remainingAmount: isHindi
+      ? "बाकी राशि"
+      : "Remaining Amount",
+
+    whatsapp: "WhatsApp",
+
+    monthName: isHindi
+      ? "महीना"
+      : "Month",
+
+    expenseCategory: isHindi
+      ? "खर्च श्रेणी"
+      : "Expense Category",
+
+    quantity: isHindi
+      ? "मात्रा"
+      : "Quantity",
+
+    unit: isHindi
+      ? "इकाई"
+      : "Unit",
+
+    price: isHindi
+      ? "दर"
+      : "Price",
+
+    field: isHindi
+      ? "खेत"
+      : "Field",
+
+    area: isHindi
+      ? "क्षेत्रफल"
+      : "Area",
+
+    areaUnit: isHindi
+      ? "क्षेत्र इकाई"
+      : "Area Unit",
+
+    worker: isHindi
+      ? "मजदूर"
+      : "Worker",
+
+    machine: isHindi
+      ? "मशीन"
+      : "Machine",
+
+    season: isHindi
+      ? "सीजन"
+      : "Season",
+
+    fileSummary: isHindi
+      ? "सारांश"
+      : "Summary",
+
+    fileHome: isHindi
+      ? "घर"
+      : "Home",
+
+    fileRent: isHindi
+      ? "किराया"
+      : "Rent",
+
+    fileFarm: isHindi
+      ? "खेती"
+      : "Farm",
+
+    popupError: isHindi
+      ? "कृपया popup की अनुमति दें।"
+      : "Please allow pop-ups to print.",
+
+    printReportTitle: isHindi
+      ? "स्मार्ट खाता रिपोर्ट"
+      : "Smart Khaata Report",
   };
 
   /* ---------------------------------------------------------
@@ -209,7 +442,9 @@ export function ReportsSection({
   const isInRange = (date: string) => {
     if (!date) return false;
 
-    if (range === "all") return true;
+    if (range === "all") {
+      return true;
+    }
 
     if (range === "today") {
       return date === today;
@@ -232,7 +467,9 @@ export function ReportsSection({
 
   const homeFiltered = useMemo(() => {
     return home.filter((item) => {
-      if (!isInRange(item.date)) return false;
+      if (!isInRange(item.date)) {
+        return false;
+      }
 
       if (
         categoryFilter !== "all" &&
@@ -254,7 +491,9 @@ export function ReportsSection({
 
   const rentFiltered = useMemo(() => {
     return rent.filter((item) => {
-      if (!isInRange(item.date)) return false;
+      if (!isInRange(item.date)) {
+        return false;
+      }
 
       if (
         tenantFilter !== "all" &&
@@ -276,7 +515,9 @@ export function ReportsSection({
 
   const farmFiltered = useMemo(() => {
     return farm.filter((item) => {
-      if (!isInRange(item.date)) return false;
+      if (!isInRange(item.date)) {
+        return false;
+      }
 
       if (
         cropFilter !== "all" &&
@@ -302,7 +543,9 @@ export function ReportsSection({
 
   const cropList = useMemo(
     () =>
-      [...new Set(farm.map((item) => item.crop))]
+      [...new Set(
+        farm.map((item) => item.crop)
+      )]
         .filter(Boolean)
         .sort(),
     [farm]
@@ -310,7 +553,9 @@ export function ReportsSection({
 
   const tenantList = useMemo(
     () =>
-      [...new Set(rent.map((item) => item.tenant))]
+      [...new Set(
+        rent.map((item) => item.tenant)
+      )]
         .filter(Boolean)
         .sort(),
     [rent]
@@ -318,7 +563,9 @@ export function ReportsSection({
 
   const categoryList = useMemo(
     () =>
-      [...new Set(home.map((item) => item.category))]
+      [...new Set(
+        home.map((item) => item.category)
+      )]
         .filter(Boolean)
         .sort(),
     [home]
@@ -362,7 +609,8 @@ export function ReportsSection({
     () =>
       rentFiltered.reduce(
         (sum, item) =>
-          sum + Math.max(
+          sum +
+          Math.max(
             0,
             safeNumber(item.remainingAmount)
           ),
@@ -374,10 +622,13 @@ export function ReportsSection({
   const farmSale = useMemo(
     () =>
       farmFiltered
-        .filter((item) => item.type === "Sale")
+        .filter(
+          (item) =>
+            item.type === "Sale"
+        )
         .reduce(
           (sum, item) =>
-            sum + safeNumber(item.amount),
+            sum + getFarmSaleAmount(item),
           0
         ),
     [farmFiltered]
@@ -386,10 +637,13 @@ export function ReportsSection({
   const farmExpense = useMemo(
     () =>
       farmFiltered
-        .filter((item) => item.type === "Expense")
+        .filter(
+          (item) =>
+            item.type === "Expense"
+        )
         .reduce(
           (sum, item) =>
-            sum + safeNumber(item.amount),
+            sum + getFarmExpenseAmount(item),
           0
         ),
     [farmFiltered]
@@ -414,19 +668,25 @@ export function ReportsSection({
 
   const cropCount =
     new Set(
-      farmFiltered.map((item) => item.crop)
+      farmFiltered.map(
+        (item) => item.crop
+      )
     ).size;
 
   const receivedRentCount =
     rentFiltered.filter(
       (item) =>
-        safeNumber(item.remainingAmount) <= 0
+        safeNumber(
+          item.remainingAmount
+        ) <= 0
     ).length;
 
   const pendingRentCount =
     rentFiltered.filter(
       (item) =>
-        safeNumber(item.remainingAmount) > 0
+        safeNumber(
+          item.remainingAmount
+        ) > 0
     ).length;
 
   /* ---------------------------------------------------------
@@ -436,14 +696,18 @@ export function ReportsSection({
   const rentIncomePct =
     totalIncome > 0
       ? Math.round(
-        (rentReceived / totalIncome) * 100
+        (rentReceived /
+          totalIncome) *
+        100
       )
       : 0;
 
   const farmIncomePct =
     totalIncome > 0
       ? Math.round(
-        (farmSale / totalIncome) * 100
+        (farmSale /
+          totalIncome) *
+        100
       )
       : 0;
 
@@ -452,73 +716,102 @@ export function ReportsSection({
   --------------------------------------------------------- */
 
   const chartData = useMemo(() => {
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
+    const months = isHindi
+      ? [
+        "जन",
+        "फ़र",
+        "मार्च",
+        "अप्रैल",
+        "मई",
+        "जून",
+        "जुलाई",
+        "अग",
+        "सित",
+        "अक्टू",
+        "नव",
+        "दिस",
+      ]
+      : [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
 
-    return months.map((monthName, index) => {
-      const monthNo =
-        String(index + 1).padStart(2, "0");
+    return months.map(
+      (monthName, index) => {
+        const monthNo =
+          String(index + 1)
+            .padStart(2, "0");
 
-      const rentValue =
-        rentFiltered
-          .filter(
-            (item) =>
-              item.date.split("-")[1] === monthNo
-          )
-          .reduce(
-            (sum, item) =>
-              sum + safeNumber(item.paidAmount),
-            0
-          );
+        const rentValue =
+          rentFiltered
+            .filter(
+              (item) =>
+                item.date.split("-")[1] ===
+                monthNo
+            )
+            .reduce(
+              (sum, item) =>
+                sum +
+                safeNumber(
+                  item.paidAmount
+                ),
+              0
+            );
 
-      const farmValue =
-        farmFiltered
-          .filter(
-            (item) =>
-              item.type === "Sale" &&
-              item.date.split("-")[1] === monthNo
-          )
-          .reduce(
-            (sum, item) =>
-              sum + safeNumber(item.amount),
-            0
-          );
+        const farmValue =
+          farmFiltered
+            .filter(
+              (item) =>
+                item.type === "Sale" &&
+                item.date.split("-")[1] ===
+                monthNo
+            )
+            .reduce(
+              (sum, item) =>
+                sum +
+                getFarmSaleAmount(item),
+              0
+            );
 
-      const homeValue =
-        homeFiltered
-          .filter(
-            (item) =>
-              item.date.split("-")[1] === monthNo
-          )
-          .reduce(
-            (sum, item) =>
-              sum + safeNumber(item.amount),
-            0
-          );
+        const homeValue =
+          homeFiltered
+            .filter(
+              (item) =>
+                item.date.split("-")[1] ===
+                monthNo
+            )
+            .reduce(
+              (sum, item) =>
+                sum +
+                safeNumber(
+                  item.amount
+                ),
+              0
+            );
 
-      return {
-        month: monthName,
-        rent: rentValue,
-        farm: farmValue,
-        home: homeValue,
-      };
-    });
+        return {
+          month: monthName,
+          rent: rentValue,
+          farm: farmValue,
+          home: homeValue,
+        };
+      }
+    );
   }, [
     homeFiltered,
     rentFiltered,
     farmFiltered,
+    isHindi,
   ]);
 
   /* ---------------------------------------------------------
@@ -563,7 +856,9 @@ export function ReportsSection({
         )}`
       );
     } else {
-      list.push(`✓ ${L.allPaymentsClear}`);
+      list.push(
+        `✓ ${L.allPaymentsClear}`
+      );
     }
 
     list.push(
@@ -592,7 +887,9 @@ export function ReportsSection({
         date: item.date,
         title: L.home,
         subtitle: item.category,
-        amount: -safeNumber(item.amount),
+        amount: -safeNumber(
+          item.amount
+        ),
         color: "text-red-400",
         icon: "⌂",
       })),
@@ -602,9 +899,13 @@ export function ReportsSection({
         date: item.date,
         title: L.rent,
         subtitle: item.tenant,
-        amount: safeNumber(item.paidAmount),
+        amount: safeNumber(
+          item.paidAmount
+        ),
         color:
-          safeNumber(item.paidAmount) > 0
+          safeNumber(
+            item.paidAmount
+          ) > 0
             ? "text-green-400"
             : "text-yellow-400",
         icon: "₹",
@@ -618,14 +919,16 @@ export function ReportsSection({
             ? L.sale
             : item.type === "Expense"
               ? L.expense
-              : "Yield",
+              : L.yield,
         subtitle: item.crop,
+
         amount:
           item.type === "Sale"
-            ? safeNumber(item.amount)
+            ? getFarmSaleAmount(item)
             : item.type === "Expense"
-              ? -safeNumber(item.amount)
+              ? -getFarmExpenseAmount(item)
               : 0,
+
         color:
           item.type === "Sale"
             ? "text-green-400"
@@ -637,8 +940,12 @@ export function ReportsSection({
     return activities
       .sort(
         (a, b) =>
-          new Date(b.date).getTime() -
-          new Date(a.date).getTime()
+          new Date(
+            b.date
+          ).getTime() -
+          new Date(
+            a.date
+          ).getTime()
       )
       .slice(0, 8);
   }, [
@@ -664,15 +971,39 @@ export function ReportsSection({
             ? L.year
             : L.all;
 
-    doc.setTextColor(22, 163, 74);
+    const generatedDate =
+      new Date().toLocaleString(
+        isHindi
+          ? "hi-IN"
+          : "en-IN"
+      );
+
+    doc.setTextColor(
+      22,
+      163,
+      74
+    );
+
     doc.setFontSize(21);
-    doc.text("SMART KHAATA", 14, 18);
+
+    doc.text(
+      "SMART KHAATA",
+      14,
+      18
+    );
 
     doc.setTextColor(40);
+
     doc.setFontSize(12);
-    doc.text(L.report, 14, 27);
+
+    doc.text(
+      L.report,
+      14,
+      27
+    );
 
     doc.setFontSize(9);
+
     doc.text(
       `${L.owner}: Ayush Jaiswal`,
       14,
@@ -686,34 +1017,70 @@ export function ReportsSection({
     );
 
     doc.text(
-      `${L.generated}: ${new Date().toLocaleString(
-        "en-IN"
-      )}`,
+      `${L.generated}: ${generatedDate}`,
       14,
       47
     );
 
     autoTable(doc, {
       startY: 54,
+
       head: [[
-        isHindi ? "विवरण" : "Summary",
+        L.summary,
         L.amount,
       ]],
+
       body: [
-        [L.home, money(homeTotal)],
-        [L.rentBilled, money(rentBilled)],
-        [L.received, money(rentReceived)],
-        [L.pending, money(rentPending)],
-        [L.farmSale, money(farmSale)],
-        [L.farmExpense, money(farmExpense)],
-        [L.profit, money(farmProfit)],
-        [L.income, money(totalIncome)],
-        [L.totalExpense, money(totalExpense)],
-        [L.balance, money(netBalance)],
+        [
+          L.home,
+          money(homeTotal),
+        ],
+        [
+          L.rentBilled,
+          money(rentBilled),
+        ],
+        [
+          L.received,
+          money(rentReceived),
+        ],
+        [
+          L.pending,
+          money(rentPending),
+        ],
+        [
+          L.farmSale,
+          money(farmSale),
+        ],
+        [
+          L.farmExpense,
+          money(farmExpense),
+        ],
+        [
+          L.profit,
+          money(farmProfit),
+        ],
+        [
+          L.income,
+          money(totalIncome),
+        ],
+        [
+          L.totalExpense,
+          money(totalExpense),
+        ],
+        [
+          L.balance,
+          money(netBalance),
+        ],
       ],
+
       headStyles: {
-        fillColor: [22, 163, 74],
+        fillColor: [
+          22,
+          163,
+          74,
+        ],
       },
+
       styles: {
         fontSize: 9,
         cellPadding: 3,
@@ -721,12 +1088,18 @@ export function ReportsSection({
     });
 
     let nextY =
-      ((doc as any).lastAutoTable?.finalY ||
-        110) + 8;
+      (
+        (doc as any)
+          .lastAutoTable
+          ?.finalY || 110
+      ) + 8;
 
-    if (rentFiltered.length > 0) {
+    if (
+      rentFiltered.length > 0
+    ) {
       autoTable(doc, {
         startY: nextY,
+
         head: [[
           L.date,
           L.tenant,
@@ -735,17 +1108,31 @@ export function ReportsSection({
           L.pending,
           L.status,
         ]],
-        body: rentFiltered.map((item) => [
-          item.date,
-          item.tenant,
-          money(item.total),
-          money(item.paidAmount),
-          money(item.remainingAmount),
-          item.status,
-        ]),
+
+        body:
+          rentFiltered.map(
+            (item) => [
+              item.date,
+              item.tenant,
+              money(item.total),
+              money(
+                item.paidAmount
+              ),
+              money(
+                item.remainingAmount
+              ),
+              item.status,
+            ]
+          ),
+
         headStyles: {
-          fillColor: [59, 130, 246],
+          fillColor: [
+            59,
+            130,
+            246,
+          ],
         },
+
         styles: {
           fontSize: 7.5,
           cellPadding: 2.5,
@@ -753,28 +1140,55 @@ export function ReportsSection({
       });
 
       nextY =
-        ((doc as any).lastAutoTable?.finalY ||
-          nextY) + 8;
+        (
+          (doc as any)
+            .lastAutoTable
+            ?.finalY ||
+          nextY
+        ) + 8;
     }
 
-    if (farmFiltered.length > 0) {
+    if (
+      farmFiltered.length > 0
+    ) {
       autoTable(doc, {
         startY: nextY,
+
         head: [[
           L.date,
           L.type,
           L.crop,
           L.amount,
         ]],
-        body: farmFiltered.map((item) => [
-          item.date,
-          item.type,
-          item.crop,
-          money(item.amount),
-        ]),
+
+        body:
+          farmFiltered.map(
+            (item) => [
+              item.date,
+              item.type === "Sale"
+                ? L.sale
+                : item.type === "Expense"
+                  ? L.expense
+                  : L.yield,
+              item.crop,
+              money(
+                item.type === "Sale"
+                  ? getFarmSaleAmount(item)
+                  : item.type === "Expense"
+                    ? getFarmExpenseAmount(item)
+                    : 0
+              ),
+            ]
+          ),
+
         headStyles: {
-          fillColor: [34, 197, 94],
+          fillColor: [
+            34,
+            197,
+            94,
+          ],
         },
+
         styles: {
           fontSize: 7.5,
           cellPadding: 2.5,
@@ -783,7 +1197,9 @@ export function ReportsSection({
     }
 
     doc.save(
-      "Smart-Khaata-Report.pdf"
+      isHindi
+        ? "Smart-Khaata-Report-Hindi.pdf"
+        : "Smart-Khaata-Report.pdf"
     );
   };
 
@@ -797,142 +1213,197 @@ export function ReportsSection({
 
     const summary = [
       {
-        Item: L.home,
-        Amount: homeTotal,
+        [L.item]: L.home,
+        [L.amount]: homeTotal,
       },
+
       {
-        Item: L.rentBilled,
-        Amount: rentBilled,
+        [L.item]: L.rentBilled,
+        [L.amount]: rentBilled,
       },
+
       {
-        Item: L.received,
-        Amount: rentReceived,
+        [L.item]: L.received,
+        [L.amount]: rentReceived,
       },
+
       {
-        Item: L.pending,
-        Amount: rentPending,
+        [L.item]: L.pending,
+        [L.amount]: rentPending,
       },
+
       {
-        Item: L.farmSale,
-        Amount: farmSale,
+        [L.item]: L.farmSale,
+        [L.amount]: farmSale,
       },
+
       {
-        Item: L.farmExpense,
-        Amount: farmExpense,
+        [L.item]: L.farmExpense,
+        [L.amount]: farmExpense,
       },
+
       {
-        Item: L.profit,
-        Amount: farmProfit,
+        [L.item]: L.profit,
+        [L.amount]: farmProfit,
       },
+
       {
-        Item: L.income,
-        Amount: totalIncome,
+        [L.item]: L.income,
+        [L.amount]: totalIncome,
       },
+
       {
-        Item: L.totalExpense,
-        Amount: totalExpense,
+        [L.item]: L.totalExpense,
+        [L.amount]: totalExpense,
       },
+
       {
-        Item: L.balance,
-        Amount: netBalance,
+        [L.item]: L.balance,
+        [L.amount]: netBalance,
       },
     ];
 
     const homeData =
       homeFiltered.map((item) => ({
-        Date: item.date,
-        Category: item.category,
-        Note: item.note,
-        Amount: safeNumber(
+        [L.date]: item.date,
+        [L.category]: item.category,
+        [L.note]: item.note,
+        [L.amount]: safeNumber(
           item.amount
         ),
       }));
 
     const rentData =
       rentFiltered.map((item) => ({
-        Date: item.date,
-        Tenant: item.tenant,
-        Month: item.month,
-        WhatsApp: item.whatsapp,
-        Rent: safeNumber(item.amount),
-        PreviousReading:
-          safeNumber(item.prevReading),
-        CurrentReading:
-          safeNumber(item.currentReading),
-        Units: safeNumber(item.units),
-        RatePerUnit:
-          safeNumber(item.ratePerUnit),
-        LightBill:
-          safeNumber(item.lightBill),
-        TotalBill:
-          safeNumber(item.total),
-        PaidAmount:
-          safeNumber(item.paidAmount),
-        RemainingAmount:
-          safeNumber(item.remainingAmount),
-        Status: item.status,
-        Note: item.note,
+        [L.date]: item.date,
+        [L.tenant]: item.tenant,
+        [L.monthName]: item.month,
+        [L.whatsapp]: item.whatsapp,
+        [L.rentAmount]: safeNumber(
+          item.amount
+        ),
+        [L.previousReading]:
+          safeNumber(
+            item.prevReading
+          ),
+        [L.currentReading]:
+          safeNumber(
+            item.currentReading
+          ),
+        [L.units]: safeNumber(
+          item.units
+        ),
+        [L.ratePerUnit]:
+          safeNumber(
+            item.ratePerUnit
+          ),
+        [L.lightBill]:
+          safeNumber(
+            item.lightBill
+          ),
+        [L.totalBill]:
+          safeNumber(
+            item.total
+          ),
+        [L.paidAmount]:
+          safeNumber(
+            item.paidAmount
+          ),
+        [L.remainingAmount]:
+          safeNumber(
+            item.remainingAmount
+          ),
+        [L.status]: item.status,
+        [L.note]: item.note,
       }));
 
     const farmData =
       farmFiltered.map((item) => ({
-        Date: item.date,
-        Type: item.type,
-        Crop: item.crop,
-        ExpenseCategory:
+        [L.date]: item.date,
+        [L.type]:
+          item.type === "Sale"
+            ? L.sale
+            : item.type === "Expense"
+              ? L.expense
+              : L.yield,
+        [L.crop]: item.crop,
+        [L.expenseCategory]:
           item.expenseCategory,
-        Amount: safeNumber(item.amount),
-        Quantity:
-          safeNumber(item.quantity),
-        Unit: item.unit,
-        Price: safeNumber(item.price),
-        Field: item.field || "",
-        Area: safeNumber(item.area),
-        AreaUnit: item.areaUnit || "",
-        Worker: item.worker || "",
-        Machine: item.machine || "",
-        Season: item.season || "",
-        Note: item.note,
+        [L.amount]:
+          item.type === "Sale"
+            ? getFarmSaleAmount(item)
+            : item.type === "Expense"
+              ? getFarmExpenseAmount(item)
+              : 0,
+        [L.quantity]: safeNumber(
+          item.quantity
+        ),
+        [L.unit]: item.unit,
+        [L.price]: safeNumber(
+          item.price
+        ),
+        [L.field]:
+          item.field || "",
+        [L.area]: safeNumber(
+          item.area
+        ),
+        [L.areaUnit]:
+          item.areaUnit || "",
+        [L.worker]:
+          item.worker || "",
+        [L.machine]:
+          item.machine || "",
+        [L.season]:
+          item.season || "",
+        [L.note]: item.note,
       }));
 
     XLSX.utils.book_append_sheet(
       workbook,
-      XLSX.utils.json_to_sheet(summary),
-      "Summary"
+      XLSX.utils.json_to_sheet(
+        summary
+      ),
+      L.fileSummary
     );
 
     XLSX.utils.book_append_sheet(
       workbook,
-      XLSX.utils.json_to_sheet(homeData),
-      "Home"
+      XLSX.utils.json_to_sheet(
+        homeData
+      ),
+      L.fileHome
     );
 
     XLSX.utils.book_append_sheet(
       workbook,
-      XLSX.utils.json_to_sheet(rentData),
-      "Rent"
+      XLSX.utils.json_to_sheet(
+        rentData
+      ),
+      L.fileRent
     );
 
     XLSX.utils.book_append_sheet(
       workbook,
-      XLSX.utils.json_to_sheet(farmData),
-      "Farm"
+      XLSX.utils.json_to_sheet(
+        farmData
+      ),
+      L.fileFarm
     );
 
-    const buffer = XLSX.write(
-      workbook,
-      {
+    const buffer =
+      XLSX.write(workbook, {
         bookType: "xlsx",
         type: "array",
-      }
-    );
+      });
 
     saveAs(
       new Blob([buffer], {
         type:
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       }),
-      "Smart-Khaata-Report.xlsx"
+      isHindi
+        ? "Smart-Khaata-Report-Hindi.xlsx"
+        : "Smart-Khaata-Report.xlsx"
     );
   };
 
@@ -947,11 +1418,7 @@ export function ReportsSection({
     );
 
     if (!win) {
-      alert(
-        isHindi
-          ? "कृपया popup की अनुमति दें।"
-          : "Please allow pop-ups to print."
-      );
+      alert(L.popupError);
       return;
     }
 
@@ -964,15 +1431,34 @@ export function ReportsSection({
             ? L.year
             : L.all;
 
+    const generatedDate =
+      new Date().toLocaleString(
+        isHindi
+          ? "hi-IN"
+          : "en-IN"
+      );
+
     win.document.write(`
       <!DOCTYPE html>
-      <html>
+
+      <html lang="${isHindi ? "hi" : "en"}">
+
       <head>
-        <title>Smart Khaata Report</title>
+
+        <meta charset="UTF-8" />
+
+        <title>
+          ${L.printReportTitle}
+        </title>
 
         <style>
+
           body {
-            font-family: Arial, sans-serif;
+            font-family:
+              Arial,
+              "Noto Sans Devanagari",
+              sans-serif;
+
             padding: 28px;
             color: #222;
           }
@@ -1023,27 +1509,45 @@ export function ReportsSection({
               padding: 10px;
             }
           }
+
         </style>
+
       </head>
 
       <body>
 
-        <h1>SMART KHAATA</h1>
-        <h2>${L.report}</h2>
+        <h1>
+          SMART KHAATA
+        </h1>
+
+        <h2>
+          ${L.report}
+        </h2>
 
         <div class="meta">
-          <b>${L.owner}:</b> Ayush Jaiswal<br/>
-          <b>${L.period}:</b> ${period}<br/>
+
+          <b>${L.owner}:</b>
+          Ayush Jaiswal
+          <br/>
+
+          <b>${L.period}:</b>
+          ${period}
+          <br/>
+
           <b>${L.generated}:</b>
-          ${new Date().toLocaleString("en-IN")}
+          ${generatedDate}
+
         </div>
 
         <table>
+
           <thead>
+
             <tr>
-              <th>Item</th>
+              <th>${L.item}</th>
               <th>${L.amount}</th>
             </tr>
+
           </thead>
 
           <tbody>
@@ -1099,9 +1603,11 @@ export function ReportsSection({
             </tr>
 
           </tbody>
+
         </table>
 
       </body>
+
       </html>
     `);
 
@@ -1121,6 +1627,7 @@ export function ReportsSection({
     <div className="w-full max-w-[1500px] mx-auto px-3 sm:px-4 lg:px-6">
 
       {/* Header */}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
 
         <SectionHeader
@@ -1128,20 +1635,20 @@ export function ReportsSection({
           sub={L.subtitle}
         />
 
-        {/* Export */}
         <div className="grid grid-cols-3 gap-2 sm:flex">
+
           <button
             onClick={downloadPDF}
             className="px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-semibold transition"
           >
-            PDF
+            {L.pdf}
           </button>
 
           <button
             onClick={downloadExcel}
             className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition"
           >
-            Excel
+            {L.excel}
           </button>
 
           <button
@@ -1150,13 +1657,17 @@ export function ReportsSection({
           >
             {L.print}
           </button>
+
         </div>
+
       </div>
 
       {/* Filters */}
+
       <FormCard>
 
         <div className="flex items-center justify-between mb-3">
+
           <span className="text-xs font-semibold text-[var(--sk-faint)]">
             {L.filters}
           </span>
@@ -1170,8 +1681,9 @@ export function ReportsSection({
             }}
             className="text-[11px] text-green-400 hover:text-green-300"
           >
-            Reset
+            {L.reset}
           </button>
+
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -1201,7 +1713,9 @@ export function ReportsSection({
           <select
             value={cropFilter}
             onChange={(e) =>
-              setCropFilter(e.target.value)
+              setCropFilter(
+                e.target.value
+              )
             }
             className="px-2.5 py-2 rounded-lg text-xs bg-[var(--sk-card)] border border-[var(--sk-border)] outline-none"
           >
@@ -1209,20 +1723,24 @@ export function ReportsSection({
               {L.allCrops}
             </option>
 
-            {cropList.map((crop) => (
-              <option
-                key={crop}
-                value={crop}
-              >
-                {crop}
-              </option>
-            ))}
+            {cropList.map(
+              (crop) => (
+                <option
+                  key={crop}
+                  value={crop}
+                >
+                  {crop}
+                </option>
+              )
+            )}
           </select>
 
           <select
             value={tenantFilter}
             onChange={(e) =>
-              setTenantFilter(e.target.value)
+              setTenantFilter(
+                e.target.value
+              )
             }
             className="px-2.5 py-2 rounded-lg text-xs bg-[var(--sk-card)] border border-[var(--sk-border)] outline-none"
           >
@@ -1268,9 +1786,11 @@ export function ReportsSection({
           </select>
 
         </div>
+
       </FormCard>
 
       {/* KPI */}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-4 mb-4">
 
         {[
@@ -1279,16 +1799,19 @@ export function ReportsSection({
             value: homeTotal,
             color: "text-red-400",
           },
+
           {
             label: L.received,
             value: rentReceived,
             color: "text-blue-400",
           },
+
           {
             label: L.pending,
             value: rentPending,
             color: "text-yellow-400",
           },
+
           {
             label: L.profit,
             value: farmProfit,
@@ -1297,11 +1820,13 @@ export function ReportsSection({
                 ? "text-teal-400"
                 : "text-red-400",
           },
+
           {
             label: L.income,
             value: totalIncome,
             color: "text-green-400",
           },
+
           {
             label: L.balance,
             value: netBalance,
@@ -1311,7 +1836,9 @@ export function ReportsSection({
                 : "text-red-400",
           },
         ].map((item) => (
-          <FormCard key={item.label}>
+          <FormCard
+            key={item.label}
+          >
             <div className="text-[10px] sm:text-xs text-[var(--sk-faint)] mb-1 truncate">
               {item.label}
             </div>
@@ -1327,9 +1854,11 @@ export function ReportsSection({
       </div>
 
       {/* Charts */}
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mb-3">
 
         {/* Monthly */}
+
         <FormCard>
 
           <div className="text-xs font-semibold text-[var(--sk-faint)] mb-2">
@@ -1352,6 +1881,7 @@ export function ReportsSection({
                   bottom: 0,
                 }}
               >
+
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="var(--sk-grid)"
@@ -1369,18 +1899,22 @@ export function ReportsSection({
                 />
 
                 <YAxis
-                  tick={{
-                    fontSize: 9,
-                    fill: "#64748b",
+                  domain={[0, "auto"]}
+                  allowDecimals={false}
+                  tickCount={6}
+                  tickFormatter={(value) => {
+                    const amount = Number(value);
+
+                    if (amount === 0) {
+                      return "₹0";
+                    }
+
+                    if (amount >= 1000) {
+                      return `₹${Math.round(amount / 1000)}K`;
+                    }
+
+                    return `₹${Math.round(amount)}`;
                   }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={38}
-                  tickFormatter={(value) =>
-                    `₹${Math.round(
-                      Number(value) / 1000
-                    )}K`
-                  }
                 />
 
                 <Tooltip
@@ -1404,22 +1938,38 @@ export function ReportsSection({
                   dataKey="rent"
                   name={L.rent}
                   fill="#60a5fa"
-                  radius={[2, 2, 0, 0]}
+                  radius={[
+                    2,
+                    2,
+                    0,
+                    0,
+                  ]}
                 />
 
                 <Bar
                   dataKey="farm"
                   name={L.farm}
                   fill="#4ade80"
-                  radius={[2, 2, 0, 0]}
+                  radius={[
+                    2,
+                    2,
+                    0,
+                    0,
+                  ]}
                 />
 
                 <Bar
                   dataKey="home"
                   name={L.home}
                   fill="#f87171"
-                  radius={[2, 2, 0, 0]}
+                  radius={[
+                    2,
+                    2,
+                    0,
+                    0,
+                  ]}
                 />
+
               </BarChart>
             </ResponsiveContainer>
 
@@ -1447,6 +1997,7 @@ export function ReportsSection({
         </FormCard>
 
         {/* Income */}
+
         <FormCard>
 
           <div className="text-xs font-semibold text-[var(--sk-faint)] mb-2">
@@ -1467,11 +2018,13 @@ export function ReportsSection({
                       data={[
                         {
                           name: L.farm,
-                          value: farmIncomePct,
+                          value:
+                            farmIncomePct,
                         },
                         {
                           name: L.rent,
-                          value: rentIncomePct,
+                          value:
+                            rentIncomePct,
                         },
                       ]}
                       cx="50%"
@@ -1523,9 +2076,11 @@ export function ReportsSection({
       </div>
 
       {/* Stats + Expense */}
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mb-3">
 
         {/* Expense */}
+
         <FormCard>
 
           <div className="text-xs font-semibold text-[var(--sk-faint)] mb-3">
@@ -1541,6 +2096,7 @@ export function ReportsSection({
                   value: homeTotal,
                   color: "bg-red-400",
                 },
+
                 {
                   label: L.farmExpense,
                   value: farmExpense,
@@ -1556,7 +2112,9 @@ export function ReportsSection({
                   );
 
                 return (
-                  <div key={item.label}>
+                  <div
+                    key={item.label}
+                  >
 
                     <div className="flex justify-between text-xs mb-1">
 
@@ -1599,6 +2157,7 @@ export function ReportsSection({
         </FormCard>
 
         {/* Quick stats */}
+
         <FormCard>
 
           <div className="text-xs font-semibold text-[var(--sk-faint)] mb-3">
@@ -1610,38 +2169,49 @@ export function ReportsSection({
             {[
               {
                 label: L.tenants,
-                value: rentFiltered.length,
+                value:
+                  rentFiltered.length,
               },
+
               {
                 label: L.crops,
                 value: cropCount,
               },
+
               {
                 label: L.rentPaid,
-                value: receivedRentCount,
+                value:
+                  receivedRentCount,
               },
+
               {
                 label: L.rentPending,
-                value: pendingRentCount,
+                value:
+                  pendingRentCount,
               },
+
               {
                 label: L.totalExpense,
                 value:
                   homeFiltered.length +
                   farmFiltered.filter(
                     (item) =>
-                      item.type === "Expense"
+                      item.type ===
+                      "Expense"
                   ).length,
               },
+
               {
                 label: L.transactions,
-                value: totalTransactions,
+                value:
+                  totalTransactions,
               },
             ].map((item) => (
               <div
                 key={item.label}
                 className="rounded-lg border border-[var(--sk-border)] bg-black/5 dark:bg-white/[0.02] px-3 py-2"
               >
+
                 <div className="text-[9px] text-[var(--sk-faint)] truncate">
                   {item.label}
                 </div>
@@ -1649,6 +2219,7 @@ export function ReportsSection({
                 <div className="text-base font-bold font-mono mt-0.5">
                   {fmtNum(item.value)}
                 </div>
+
               </div>
             ))}
 
@@ -1659,6 +2230,7 @@ export function ReportsSection({
       </div>
 
       {/* Insights */}
+
       <FormCard>
 
         <div className="text-xs font-semibold text-[var(--sk-faint)] mb-2">
@@ -1683,9 +2255,11 @@ export function ReportsSection({
       </FormCard>
 
       {/* Recent Activities */}
+
       <FormCard>
 
         <div className="flex items-center justify-between mb-2">
+
           <div className="text-xs font-semibold text-[var(--sk-faint)]">
             {L.recent}
           </div>
@@ -1693,6 +2267,7 @@ export function ReportsSection({
           <span className="text-[9px] text-[var(--sk-faint)]">
             {recentActivities.length}
           </span>
+
         </div>
 
         {recentActivities.length > 0 ? (
@@ -1730,12 +2305,23 @@ export function ReportsSection({
                   </div>
 
                   <div
-                    className={`${item.color} text-xs font-bold font-mono whitespace-nowrap`}
+                    className={
+                      item.amount > 0
+                        ? "text-green-400"
+                        : item.amount < 0
+                          ? "text-red-400"
+                          : "text-slate-300"
+                    }
                   >
-                    {item.amount >= 0
-                      ? "+"
-                      : ""}
-                    {fmt(item.amount)}
+                    {item.amount > 0
+                      ? `+${fmt(item.amount)}`
+                      : item.amount < 0
+                        ? fmt(item.amount)
+                        : item.title === L.rent
+                          ? (isHindi ? "भुगतान बाकी" : "Payment Pending")
+                          : item.title === L.yield
+                            ? (isHindi ? "रिकॉर्ड दर्ज" : "Record Added")
+                            : fmt(0)}
                   </div>
 
                 </div>

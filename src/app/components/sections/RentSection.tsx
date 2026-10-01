@@ -126,6 +126,7 @@ export function RentSection({
   lang,
 }: RentSectionProps) {
   const t = STRINGS[lang];
+  const isHi = lang === "hi";
 
   const [showForm, setShowForm] =
     useState(false);
@@ -145,10 +146,6 @@ export function RentSection({
   const [error, setError] =
     useState("");
 
-  /* -------------------------------------------------------
-     CALCULATED VALUES
-  ------------------------------------------------------- */
-
   const calculated = useMemo(
     () => calculateRentValues(form),
     [form]
@@ -159,9 +156,7 @@ export function RentSection({
   ------------------------------------------------------- */
 
   const filteredRecords = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+    const query = search.trim().toLowerCase();
 
     return [...records]
       .filter((record) => {
@@ -255,16 +250,14 @@ export function RentSection({
   const openAddForm = () => {
     setEditingId(null);
 
+    const today = new Date()
+      .toISOString()
+      .slice(0, 10);
+
     setForm({
       ...EMPTY_FORM,
-      date: new Date()
-        .toISOString()
-        .slice(0, 10),
-      month: getMonthName(
-        new Date()
-          .toISOString()
-          .slice(0, 10)
-      ),
+      date: today,
+      month: getMonthName(today),
     });
 
     setError("");
@@ -286,15 +279,9 @@ export function RentSection({
       month: record.month,
       whatsapp: record.whatsapp,
       amount: String(record.amount),
-      prevReading: String(
-        record.prevReading
-      ),
-      currentReading: String(
-        record.currentReading
-      ),
-      ratePerUnit: String(
-        record.ratePerUnit
-      ),
+      prevReading: String(record.prevReading),
+      currentReading: String(record.currentReading),
+      ratePerUnit: String(record.ratePerUnit),
       status: record.status,
       note: record.note,
     });
@@ -323,12 +310,11 @@ export function RentSection({
     event.preventDefault();
     setError("");
 
-    const tenant =
-      form.tenant.trim();
+    const tenant = form.tenant.trim();
 
     if (!tenant) {
       setError(
-        lang === "hi"
+        isHi
           ? "किरायेदार का नाम डालें।"
           : "Please enter tenant name."
       );
@@ -337,23 +323,12 @@ export function RentSection({
 
     if (
       !form.date ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(
-        form.date
-      )
+      !/^\d{4}-\d{2}-\d{2}$/.test(form.date)
     ) {
       setError(
-        lang === "hi"
+        isHi
           ? "सही तारीख चुनें।"
           : "Please select a valid date."
-      );
-      return;
-    }
-
-    if (calculated.amount < 0) {
-      setError(
-        lang === "hi"
-          ? "किराया राशि सही डालें।"
-          : "Please enter a valid rent amount."
       );
       return;
     }
@@ -363,8 +338,8 @@ export function RentSection({
       calculated.prevReading
     ) {
       setError(
-        lang === "hi"
-          ? "Current reading, previous reading से कम नहीं हो सकती।"
+        isHi
+          ? "वर्तमान मीटर रीडिंग पिछली रीडिंग से कम नहीं हो सकती।"
           : "Current reading cannot be less than previous reading."
       );
       return;
@@ -385,10 +360,9 @@ export function RentSection({
         form.month.trim() ||
         getMonthName(form.date),
 
-      whatsapp:
-        form.whatsapp
-          .replace(/\D/g, "")
-          .slice(0, 15),
+      whatsapp: form.whatsapp
+        .replace(/\D/g, "")
+        .slice(0, 15),
 
       amount: calculated.amount,
 
@@ -407,6 +381,16 @@ export function RentSection({
         calculated.lightBill,
 
       total: calculated.total,
+
+      paidAmount:
+        form.status === "Received"
+          ? calculated.total
+          : 0,
+
+      remainingAmount:
+        form.status === "Received"
+          ? 0
+          : calculated.total,
 
       status: form.status,
 
@@ -432,9 +416,7 @@ export function RentSection({
      DELETE
   ------------------------------------------------------- */
 
-  const deleteRecord = (
-    id: string
-  ) => {
+  const deleteRecord = (id: string) => {
     const record = records.find(
       (item) => item.id === id
     );
@@ -442,8 +424,8 @@ export function RentSection({
     if (!record) return;
 
     const confirmed = window.confirm(
-      lang === "hi"
-        ? `क्या आप ${record.tenant} का रिकॉर्ड हटाना चाहते हैं?`
+      isHi
+        ? `क्या आप ${record.tenant} का किराया रिकॉर्ड हटाना चाहते हैं?`
         : `Delete rent record for ${record.tenant}?`
     );
 
@@ -464,15 +446,15 @@ export function RentSection({
      MARK RECEIVED
   ------------------------------------------------------- */
 
-  const markReceived = (
-    id: string
-  ) => {
+  const markReceived = (id: string) => {
     setRecords((current) =>
       current.map((record) =>
         record.id === id
           ? {
               ...record,
               status: "Received",
+              paidAmount: record.total,
+              remainingAmount: 0,
             }
           : record
       )
@@ -486,37 +468,37 @@ export function RentSection({
   const sendWhatsApp = (
     record: RentRecord
   ) => {
-    const phone =
-      record.whatsapp.replace(
-        /\D/g,
-        ""
-      );
+    const phone = record.whatsapp.replace(
+      /\D/g,
+      ""
+    );
 
     if (!phone) {
       window.alert(
-        lang === "hi"
+        isHi
           ? "इस किरायेदार का WhatsApp नंबर उपलब्ध नहीं है।"
           : "WhatsApp number is not available."
       );
       return;
     }
 
-    const message =
-      lang === "hi"
-        ? `नमस्ते ${record.tenant},\n${record.month} का किराया: ${fmt(
-            record.amount
-          )}\nLight Bill: ${fmt(
-            record.lightBill
-          )}\nकुल राशि: ${fmt(
-            record.total
-          )}\nस्थिति: ${record.status}`
-        : `Hello ${record.tenant},\nRent: ${fmt(
-            record.amount
-          )}\nLight Bill: ${fmt(
-            record.lightBill
-          )}\nTotal: ${fmt(
-            record.total
-          )}\nStatus: ${record.status}`;
+    const message = isHi
+      ? `नमस्ते ${record.tenant},
+${record.month} का किराया: ${fmt(record.amount)}
+बिजली बिल: ${fmt(record.lightBill)}
+कुल राशि: ${fmt(record.total)}
+स्थिति: ${
+          record.status === "Received"
+            ? "जमा"
+            : record.status === "Pending"
+            ? "बाकी"
+            : "आंशिक"
+        }`
+      : `Hello ${record.tenant},
+Rent: ${fmt(record.amount)}
+Light Bill: ${fmt(record.lightBill)}
+Total: ${fmt(record.total)}
+Status: ${record.status}`;
 
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(
       message
@@ -535,16 +517,23 @@ export function RentSection({
 
   return (
     <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-5 lg:px-6 xl:px-8">
+
       <SectionHeader
         title={
           t.nav?.rent ||
-          "Rent Management"
+          (isHi ? "किराया प्रबंधन" : "Rent Management")
         }
-        sub="Manage tenant rent, meter readings and pending payments"
+        sub={
+          isHi
+            ? "किरायेदार, मीटर रीडिंग और बकाया भुगतान का प्रबंधन करें"
+            : "Manage tenant rent, meter readings and pending payments"
+        }
       />
 
       {/* SUMMARY */}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+
         <FormCard>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -556,7 +545,7 @@ export function RentSection({
 
             <div>
               <div className="text-xs text-[var(--sk-muted)]">
-                Total
+                {isHi ? "कुल राशि" : "Total"}
               </div>
 
               <div className="font-bold text-lg">
@@ -577,7 +566,7 @@ export function RentSection({
 
             <div>
               <div className="text-xs text-[var(--sk-muted)]">
-                Received
+                {isHi ? "जमा" : "Received"}
               </div>
 
               <div className="font-bold text-lg text-green-400">
@@ -598,7 +587,7 @@ export function RentSection({
 
             <div>
               <div className="text-xs text-[var(--sk-muted)]">
-                Pending
+                {isHi ? "बाकी" : "Pending"}
               </div>
 
               <div className="font-bold text-lg text-amber-400">
@@ -619,7 +608,7 @@ export function RentSection({
 
             <div>
               <div className="text-xs text-[var(--sk-muted)]">
-                Partial
+                {isHi ? "आंशिक" : "Partial"}
               </div>
 
               <div className="font-bold text-lg text-purple-400">
@@ -628,18 +617,26 @@ export function RentSection({
             </div>
           </div>
         </FormCard>
+
       </div>
 
       {/* TOOLBAR */}
+
       <FormCard>
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+
           <div className="flex flex-col sm:flex-row gap-2 flex-1">
+
             <input
               value={search}
               onChange={(e) =>
                 setSearch(e.target.value)
               }
-              placeholder="Search tenant..."
+              placeholder={
+                isHi
+                  ? "किरायेदार खोजें..."
+                  : "Search tenant..."
+              }
               className="w-full sm:max-w-sm bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-xl px-3 py-2.5 text-sm text-[var(--sk-text)] outline-none focus:border-green-400/50"
             />
 
@@ -655,18 +652,24 @@ export function RentSection({
               className="bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-xl px-3 py-2.5 text-sm text-[var(--sk-text)] outline-none"
             >
               <option value="All">
-                All Status
+                {isHi
+                  ? "सभी स्थिति"
+                  : "All Status"}
               </option>
+
               <option value="Received">
-                Received
+                {isHi ? "जमा" : "Received"}
               </option>
+
               <option value="Pending">
-                Pending
+                {isHi ? "बाकी" : "Pending"}
               </option>
+
               <option value="Partial">
-                Partial
+                {isHi ? "आंशिक" : "Partial"}
               </option>
             </select>
+
           </div>
 
           <button
@@ -674,25 +677,38 @@ export function RentSection({
             className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors"
           >
             <Plus size={17} />
-            Add Rent
+
+            {isHi
+              ? "किराया जोड़ें"
+              : "Add Rent"}
           </button>
+
         </div>
       </FormCard>
 
       {/* FORM */}
+
       {showForm && (
         <div className="mt-5">
           <FormCard>
+
             <div className="flex items-center justify-between mb-5">
+
               <div>
                 <h2 className="font-bold text-lg text-[var(--sk-text)]">
                   {editingId
-                    ? "Edit Rent"
+                    ? isHi
+                      ? "किराया रिकॉर्ड संपादित करें"
+                      : "Edit Rent"
+                    : isHi
+                    ? "नया किराया रिकॉर्ड"
                     : "Add Rent"}
                 </h2>
 
                 <p className="text-xs text-[var(--sk-muted)] mt-1">
-                  Rent + electricity bill will be calculated automatically.
+                  {isHi
+                    ? "किराया और बिजली बिल अपने आप calculate होंगे।"
+                    : "Rent + electricity bill will be calculated automatically."}
                 </p>
               </div>
 
@@ -700,9 +716,11 @@ export function RentSection({
                 type="button"
                 onClick={closeForm}
                 className="w-9 h-9 rounded-lg border border-[var(--sk-border)] flex items-center justify-center"
+                title={isHi ? "बंद करें" : "Close"}
               >
                 <X size={17} />
               </button>
+
             </div>
 
             {error && (
@@ -715,10 +733,16 @@ export function RentSection({
               onSubmit={handleSubmit}
               className="space-y-5"
             >
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                {/* TENANT */}
+
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Tenant Name *
+                    {isHi
+                      ? "किरायेदार का नाम *"
+                      : "Tenant Name *"}
                   </span>
 
                   <input
@@ -732,13 +756,21 @@ export function RentSection({
                       }))
                     }
                     className="w-full bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-xl px-3 py-2.5 text-sm outline-none"
-                    placeholder="Tenant name"
+                    placeholder={
+                      isHi
+                        ? "किरायेदार का नाम"
+                        : "Tenant name"
+                    }
                   />
                 </label>
 
+                {/* DATE */}
+
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Date *
+                    {isHi
+                      ? "तारीख *"
+                      : "Date *"}
                   </span>
 
                   <input
@@ -748,8 +780,7 @@ export function RentSection({
                     onChange={(e) =>
                       setForm((prev) => ({
                         ...prev,
-                        date:
-                          e.target.value,
+                        date: e.target.value,
                         month:
                           getMonthName(
                             e.target.value
@@ -760,9 +791,11 @@ export function RentSection({
                   />
                 </label>
 
+                {/* MONTH */}
+
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Month
+                    {isHi ? "महीना" : "Month"}
                   </span>
 
                   <input
@@ -775,9 +808,13 @@ export function RentSection({
                       }))
                     }
                     className="w-full bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-xl px-3 py-2.5 text-sm outline-none"
-                    placeholder="Jun"
+                    placeholder={
+                      isHi ? "जून" : "Jun"
+                    }
                   />
                 </label>
+
+                {/* WHATSAPP */}
 
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
@@ -802,9 +839,13 @@ export function RentSection({
                   />
                 </label>
 
+                {/* RENT */}
+
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Monthly Rent
+                    {isHi
+                      ? "मासिक किराया"
+                      : "Monthly Rent"}
                   </span>
 
                   <input
@@ -824,9 +865,13 @@ export function RentSection({
                   />
                 </label>
 
+                {/* RATE */}
+
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Rate / Unit
+                    {isHi
+                      ? "प्रति यूनिट दर"
+                      : "Rate / Unit"}
                   </span>
 
                   <input
@@ -846,9 +891,13 @@ export function RentSection({
                   />
                 </label>
 
+                {/* PREVIOUS */}
+
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Previous Reading
+                    {isHi
+                      ? "पिछली मीटर रीडिंग"
+                      : "Previous Reading"}
                   </span>
 
                   <input
@@ -866,9 +915,13 @@ export function RentSection({
                   />
                 </label>
 
+                {/* CURRENT */}
+
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Current Reading
+                    {isHi
+                      ? "वर्तमान मीटर रीडिंग"
+                      : "Current Reading"}
                   </span>
 
                   <input
@@ -886,9 +939,11 @@ export function RentSection({
                   />
                 </label>
 
+                {/* STATUS */}
+
                 <label className="space-y-1.5">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Status
+                    {isHi ? "स्थिति" : "Status"}
                   </span>
 
                   <select
@@ -903,20 +958,24 @@ export function RentSection({
                     className="w-full bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-xl px-3 py-2.5 text-sm outline-none"
                   >
                     <option value="Received">
-                      Received
+                      {isHi ? "जमा" : "Received"}
                     </option>
+
                     <option value="Pending">
-                      Pending
+                      {isHi ? "बाकी" : "Pending"}
                     </option>
+
                     <option value="Partial">
-                      Partial
+                      {isHi ? "आंशिक" : "Partial"}
                     </option>
                   </select>
                 </label>
 
+                {/* NOTE */}
+
                 <label className="space-y-1.5 sm:col-span-2 lg:col-span-3">
                   <span className="text-xs font-semibold text-[var(--sk-muted)]">
-                    Note
+                    {isHi ? "नोट" : "Note"}
                   </span>
 
                   <textarea
@@ -930,16 +989,23 @@ export function RentSection({
                       }))
                     }
                     className="w-full bg-[var(--sk-card2)] border border-[var(--sk-border)] rounded-xl px-3 py-2.5 text-sm outline-none resize-none"
-                    placeholder="Optional note"
+                    placeholder={
+                      isHi
+                        ? "वैकल्पिक नोट"
+                        : "Optional note"
+                    }
                   />
                 </label>
+
               </div>
 
               {/* CALCULATION */}
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
                 <div className="rounded-xl bg-blue-400/10 border border-blue-400/20 p-3">
                   <div className="text-xs text-[var(--sk-muted)]">
-                    Units
+                    {isHi ? "यूनिट" : "Units"}
                   </div>
 
                   <div className="text-lg font-bold text-blue-400">
@@ -949,48 +1015,48 @@ export function RentSection({
 
                 <div className="rounded-xl bg-amber-400/10 border border-amber-400/20 p-3">
                   <div className="text-xs text-[var(--sk-muted)]">
-                    Light Bill
+                    {isHi
+                      ? "बिजली बिल"
+                      : "Light Bill"}
                   </div>
 
                   <div className="text-lg font-bold text-amber-400">
-                    {fmt(
-                      calculated.lightBill
-                    )}
+                    {fmt(calculated.lightBill)}
                   </div>
                 </div>
 
                 <div className="rounded-xl bg-green-400/10 border border-green-400/20 p-3">
                   <div className="text-xs text-[var(--sk-muted)]">
-                    Rent
+                    {isHi ? "किराया" : "Rent"}
                   </div>
 
                   <div className="text-lg font-bold text-green-400">
-                    {fmt(
-                      calculated.amount
-                    )}
+                    {fmt(calculated.amount)}
                   </div>
                 </div>
 
                 <div className="rounded-xl bg-purple-400/10 border border-purple-400/20 p-3">
                   <div className="text-xs text-[var(--sk-muted)]">
-                    Total
+                    {isHi ? "कुल राशि" : "Total"}
                   </div>
 
                   <div className="text-lg font-bold text-purple-400">
-                    {fmt(
-                      calculated.total
-                    )}
+                    {fmt(calculated.total)}
                   </div>
                 </div>
+
               </div>
 
+              {/* BUTTONS */}
+
               <div className="flex flex-col sm:flex-row gap-2 justify-end">
+
                 <button
                   type="button"
                   onClick={closeForm}
                   className="px-4 py-2.5 rounded-xl border border-[var(--sk-border)] text-sm font-semibold"
                 >
-                  Cancel
+                  {isHi ? "रद्द करें" : "Cancel"}
                 </button>
 
                 <button
@@ -998,40 +1064,58 @@ export function RentSection({
                   className="px-5 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-semibold"
                 >
                   {editingId
-                    ? "Update Rent"
+                    ? isHi
+                      ? "किराया अपडेट करें"
+                      : "Update Rent"
+                    : isHi
+                    ? "किराया सेव करें"
                     : "Save Rent"}
                 </button>
+
               </div>
+
             </form>
           </FormCard>
         </div>
       )}
 
       {/* RECORDS */}
+
       <div className="mt-5 space-y-3">
+
         {filteredRecords.length === 0 ? (
           <FormCard>
             <div className="text-center py-10 text-[var(--sk-muted)]">
+
               <Building2
                 size={34}
                 className="mx-auto mb-3 opacity-50"
               />
 
               <div className="font-semibold">
-                No rent records found
+                {isHi
+                  ? "कोई किराया रिकॉर्ड नहीं मिला"
+                  : "No rent records found"}
               </div>
 
               <div className="text-xs mt-1">
-                Add your first rent record.
+                {isHi
+                  ? "अपना पहला किराया रिकॉर्ड जोड़ें।"
+                  : "Add your first rent record."}
               </div>
+
             </div>
           </FormCard>
         ) : (
           filteredRecords.map((record) => (
             <FormCard key={record.id}>
+
               <div className="flex flex-col xl:flex-row xl:items-center gap-4">
+
                 {/* TENANT */}
+
                 <div className="flex items-start gap-3 flex-1 min-w-0">
+
                   <div className="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
                     <Building2
                       size={21}
@@ -1040,6 +1124,7 @@ export function RentSection({
                   </div>
 
                   <div className="min-w-0">
+
                     <div className="font-bold text-[var(--sk-text)] break-words">
                       {record.tenant}
                     </div>
@@ -1061,14 +1146,17 @@ export function RentSection({
                         {record.note}
                       </div>
                     )}
+
                   </div>
                 </div>
 
                 {/* BILL */}
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 xl:min-w-[520px]">
+
                   <div>
                     <div className="text-[10px] text-[var(--sk-dim)] uppercase">
-                      Rent
+                      {isHi ? "किराया" : "Rent"}
                     </div>
 
                     <div className="font-bold text-sm">
@@ -1078,7 +1166,7 @@ export function RentSection({
 
                   <div>
                     <div className="text-[10px] text-[var(--sk-dim)] uppercase">
-                      Units
+                      {isHi ? "यूनिट" : "Units"}
                     </div>
 
                     <div className="font-bold text-sm">
@@ -1088,29 +1176,32 @@ export function RentSection({
 
                   <div>
                     <div className="text-[10px] text-[var(--sk-dim)] uppercase">
-                      Light
+                      {isHi
+                        ? "बिजली"
+                        : "Light"}
                     </div>
 
                     <div className="font-bold text-sm text-amber-400">
-                      {fmt(
-                        record.lightBill
-                      )}
+                      {fmt(record.lightBill)}
                     </div>
                   </div>
 
                   <div>
                     <div className="text-[10px] text-[var(--sk-dim)] uppercase">
-                      Total
+                      {isHi ? "कुल" : "Total"}
                     </div>
 
                     <div className="font-bold text-sm text-green-400">
                       {fmt(record.total)}
                     </div>
                   </div>
+
                 </div>
 
-                {/* STATUS */}
+                {/* STATUS + ACTIONS */}
+
                 <div className="flex items-center gap-2 flex-wrap">
+
                   <StatusBadge
                     status={record.status}
                   />
@@ -1123,7 +1214,11 @@ export function RentSection({
                           record.id
                         )
                       }
-                      title="Mark as received"
+                      title={
+                        isHi
+                          ? "जमा के रूप में चिह्नित करें"
+                          : "Mark as received"
+                      }
                       className="w-9 h-9 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 flex items-center justify-center"
                     >
                       <CheckCircle2
@@ -1135,11 +1230,13 @@ export function RentSection({
                   {record.whatsapp && (
                     <button
                       onClick={() =>
-                        sendWhatsApp(
-                          record
-                        )
+                        sendWhatsApp(record)
                       }
-                      title="WhatsApp reminder"
+                      title={
+                        isHi
+                          ? "WhatsApp रिमाइंडर भेजें"
+                          : "WhatsApp reminder"
+                      }
                       className="w-9 h-9 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 flex items-center justify-center"
                     >
                       <MessageCircle
@@ -1152,7 +1249,9 @@ export function RentSection({
                     onClick={() =>
                       openEditForm(record)
                     }
-                    title="Edit"
+                    title={
+                      isHi ? "संपादित करें" : "Edit"
+                    }
                     className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center justify-center"
                   >
                     <Edit3 size={16} />
@@ -1160,55 +1259,68 @@ export function RentSection({
 
                   <button
                     onClick={() =>
-                      deleteRecord(
-                        record.id
-                      )
+                      deleteRecord(record.id)
                     }
-                    title="Delete"
+                    title={
+                      isHi ? "हटाएं" : "Delete"
+                    }
                     className="w-9 h-9 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center"
                   >
                     <Trash2 size={16} />
                   </button>
+
                 </div>
               </div>
 
               {/* METER DETAILS */}
+
               <div className="mt-4 pt-3 border-t border-white/5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[var(--sk-muted)]">
+
                 <span>
-                  Previous:{" "}
+                  {isHi
+                    ? "पिछली रीडिंग:"
+                    : "Previous:"}{" "}
                   <b className="text-[var(--sk-text)]">
                     {record.prevReading}
                   </b>
                 </span>
 
                 <span>
-                  Current:{" "}
+                  {isHi
+                    ? "वर्तमान रीडिंग:"
+                    : "Current:"}{" "}
                   <b className="text-[var(--sk-text)]">
                     {record.currentReading}
                   </b>
                 </span>
 
                 <span>
-                  Units:{" "}
+                  {isHi
+                    ? "यूनिट:"
+                    : "Units:"}{" "}
                   <b className="text-blue-400">
                     {record.units}
                   </b>
                 </span>
 
                 <span>
-                  Rate:{" "}
+                  {isHi
+                    ? "दर:"
+                    : "Rate:"}{" "}
                   <b className="text-[var(--sk-text)]">
-                    {fmt(
-                      record.ratePerUnit
-                    )}
-                    /unit
+                    {fmt(record.ratePerUnit)}
+                    /{isHi ? "यूनिट" : "unit"}
                   </b>
                 </span>
+
               </div>
+
             </FormCard>
           ))
         )}
+
       </div>
     </div>
   );
 }
+
