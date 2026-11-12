@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+:root {
+  --sk-bg: #060e0a;
+  --sk-card: #0c1a13;
+  --sk-card2: #07130e;
+  --sk-card3: #12271c;
+  --sk-border: #1e3c2c;
+  --sk-border-subtle: #14281e;
+  --sk-text: #f1f5f9;
+  --sk-text2: #cbd5e1;
+  --sk-muted: #94a3b8;
+  --sk-faint: #64748b;
+  --sk-dim: #475569;
+  --sk-accent: #10b981;
+  --sk-header-bg: rgba(8, 20, 14, 0.95);
+  --sk-header-border: #1a3525;
+  --sk-subnav-bg: #07130e;
+  --sk-footer-bg: #07130e;
+  --sk-input-bg: #07130e;
+}
+
+:root.light-theme,
+html.light-theme,
+body.light-theme,
+.light-theme,
+[data-theme="light"] {
+  --sk-bg: #f8fafc;
+  --sk-card: #ffffff;
+  --sk-card2: #f1f5f9;
+  --sk-card3: #e2e8f0;
+  --sk-border: #cbd5e1;
+  --sk-border-subtle: #e2e8f0;
+  --sk-text: #0f172a;
+  --sk-text2: #334155;
+  --sk-muted: #64748b;
+  --sk-faint: #94a3b8;
+  --sk-dim: #cbd5e1;
+  --sk-accent: #059669;
+  --sk-header-bg: rgba(255, 255, 255, 0.96);
+  --sk-header-border: #e2e8f0;
+  --sk-subnav-bg: #f8fafc;
+  --sk-footer-bg: #ffffff;
+  --sk-input-bg: #ffffff;
+}
+
+body {
+  font-family: 'Mukta', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--sk-bg);
+  color: var(--sk-text);
+  overflow-x: hidden;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--sk-card2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sk-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sk-dim);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Light theme safety mappings & polish */
+.light-theme .bg-\[\#0c1a13\] {
+  background-color: var(--sk-card) !important;
+}
+.light-theme .bg-\[\#07130e\] {
+  background-color: var(--sk-card2) !important;
+}
+.light-theme .bg-\[\#08140e\]\/95 {
+  background-color: var(--sk-header-bg) !important;
+}
+.light-theme .bg-\[\#0a1811\] {
+  background-color: var(--sk-card2) !important;
+}
+.light-theme .bg-\[\#060e0a\] {
+  background-color: var(--sk-bg) !important;
+}
+.light-theme .bg-\[\#12271c\] {
+  background-color: var(--sk-card3) !important;
+}
+.light-theme .border-\[\#1e3c2c\] {
+  border-color: var(--sk-border) !important;
+}
+.light-theme .border-\[\#1a3525\] {
+  border-color: var(--sk-border-subtle) !important;
+}
+.light-theme .border-\[\#14281e\] {
+  border-color: var(--sk-border-subtle) !important;
+}
+
+/* Light Theme Clean Surfaces & Contrast */
+.light-theme input,
+.light-theme select,
+.light-theme textarea {
+  color: var(--sk-text);
+  background-color: var(--sk-card);
+}
+
+.light-theme input::placeholder,
+.light-theme textarea::placeholder {
+  color: var(--sk-muted);
+}
+
+.light-theme .bg-slate-950,
+.light-theme .bg-slate-900 {
+  background-color: var(--sk-card2);
+}
+
+.light-theme .border-slate-800,
+.light-theme .border-slate-700 {
+  border-color: var(--sk-border);
+}
+
+/* Ensure vibrant buttons retain white text */
+.light-theme .bg-emerald-600,
+.light-theme .bg-emerald-700,
+.light-theme .bg-green-600,
+.light-theme .bg-red-600,
+.light-theme .bg-blue-600 {
+  color: #ffffff !important;
+}
+
+/* Ensure headings and khet card titles in light theme have strong dark contrast */
+.light-theme h1:not(button *),
+.light-theme h2:not(button *),
+.light-theme h3:not(button *),
+.light-theme h4:not(button *) {
+  color: var(--sk-text);
+}
+
+/* Dashboard cards: force clean white surfaces in Light Theme, independent of Tailwind dark variants. */
+html.light-theme .dashboard-surface,
+html[data-theme="light"] .dashboard-surface,
+body.light-theme .dashboard-surface,
+body[data-theme="light"] .dashboard-surface {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+html.light-theme .dashboard-surface .dark\:text-white,
+html[data-theme="light"] .dashboard-surface .dark\:text-white { color: #0f172a !important; }
+html.light-theme .dashboard-surface .dark\:text-slate-200,
+html[data-theme="light"] .dashboard-surface .dark\:text-slate-200 { color: #1e293b !important; }
+html.light-theme .dashboard-surface .dark\:text-slate-300,
+html[data-theme="light"] .dashboard-surface .dark\:text-slate-300 { color: #475569 !important; }
+html.light-theme .dashboard-surface .dark\:border-slate-800,
+html[data-theme="light"] .dashboard-surface .dark\:border-slate-800 { border-color: #e2e8f0 !important; }
+
+
+/* Menu / navigation light-theme overrides. These cover literal dark: utility classes
+   that may remain visible in the menu and settings surfaces when Light is selected. */
+html.light-theme [class*="dark:bg-[#0c1a13]"],
+html[data-theme="light"] [class*="dark:bg-[#0c1a13]"],
+body.light-theme [class*="dark:bg-[#0c1a13]"] {
+  background-color: #ffffff !important;
+}
+html.light-theme [class*="dark:bg-[#07130e]"],
+html[data-theme="light"] [class*="dark:bg-[#07130e]"],
+body.light-theme [class*="dark:bg-[#07130e]"] {
+  background-color: #f8fafc !important;
+}
+html.light-theme [class*="dark:bg-[#12271c]"],
+html[data-theme="light"] [class*="dark:bg-[#12271c]"],
+body.light-theme [class*="dark:bg-[#12271c]"] {
+  background-color: #f1f5f9 !important;
+}
+html.light-theme .bg-slate-700,
+html[data-theme="light"] .bg-slate-700,
+body.light-theme .bg-slate-700 {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+html.light-theme [class*="dark:text-white"],
+html[data-theme="light"] [class*="dark:text-white"] {
+  color: #0f172a !important;
+}
+html.light-theme [class*="dark:text-slate-200"],
+html[data-theme="light"] [class*="dark:text-slate-200"] {
+  color: #1e293b !important;
+}
+html.light-theme [class*="dark:text-slate-300"],
+html[data-theme="light"] [class*="dark:text-slate-300"] {
+  color: #334155 !important;
+}
+html.light-theme [class*="dark:border-[#1e3c2c]"],
+html[data-theme="light"] [class*="dark:border-[#1e3c2c]"],
+html.light-theme [class*="dark:border-[#1a3525]"],
+html[data-theme="light"] [class*="dark:border-[#1a3525]"] {
+  border-color: #e2e8f0 !important;
+}
