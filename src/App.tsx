@@ -466,28 +466,30 @@ export default function App() {
         ? 'bg-[#08140e]/95 border-[#1a3525]'
         : 'bg-white/95 border-slate-200 shadow-xs'
         }`}>
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-5 lg:px-6 h-14 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-5 lg:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <div className="app-header-brand min-w-0 flex-1 flex items-center gap-2.5 sm:gap-3">
             <AppLogo size="md" appName={displayAppName} />
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className={`font-extrabold text-base sm:text-lg tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className={`min-w-0 truncate font-extrabold text-base sm:text-lg tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                   {displayAppName}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 font-semibold border border-emerald-500/30">
+                <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 font-semibold border border-emerald-500/30">
                   {isHi ? 'pro' : 'pro'}
                 </span>
               </div>
-              <p className={`text-[10px] sm:text-[11px] -mt-0.5 hidden xs:block ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[10px] sm:text-[11px] -mt-0.5 hidden sm:block ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                 {isHi ? 'खेत, बटाईदार, मकान किराया व घर खर्च' : 'Farm, Batai, Rental & Home Expenses'}
               </p>
             </div>
           </div>
 
             {/* Right Header Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <SyncStatusBadge lang={lang} />
-            <PWAInstallButton lang={lang} variant="header" />
+          <div className="app-header-controls flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="app-header-sync hidden sm:block shrink-0">
+              <SyncStatusBadge lang={lang} />
+            </div>
+            <PWAInstallButton lang={lang} variant="header" className="app-header-install hidden sm:flex" />
 
             <button
               type="button"
@@ -504,14 +506,14 @@ export default function App() {
             <button
               type="button"
               onClick={toggleLang}
-              className={`h-9 px-2.5 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm ${theme === 'dark'
+              className={`h-9 w-9 md:w-auto md:px-2.5 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-center md:justify-start gap-1.5 active:scale-95 shadow-sm ${theme === 'dark'
                 ? 'border-[#1e3c2c] bg-[#0c1a13] hover:bg-[#12271c] text-emerald-300'
                 : 'border-slate-300 bg-white hover:bg-slate-100 text-emerald-700'
                 }`}
               title="भाषा बदलें"
             >
               <Languages size={15} className={theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'} />
-              <span>{lang === 'hi' ? 'EN' : 'हिन्दी'}</span>
+              <span className="hidden md:inline">{lang === 'hi' ? 'EN' : 'हिन्दी'}</span>
             </button>
 
             <button
@@ -521,7 +523,7 @@ export default function App() {
               title={isHi ? 'नया रिकॉर्ड जोड़ें' : 'Add Record'}
             >
               <Plus size={16} strokeWidth={2.5} />
-              <span className="hidden xs:inline">{isHi ? 'नया रिकॉर्ड' : 'Add Record'}</span>
+              <span className="hidden md:inline">{isHi ? 'नया रिकॉर्ड' : 'Add Record'}</span>
             </button>
 
             <button
@@ -534,7 +536,7 @@ export default function App() {
               title={isHi ? 'लॉगिन / नया खाता' : 'Login / Sign Up'}
             >
               <User size={15} className="text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden xs:inline">{isHi ? 'लॉगिन' : 'Login'}</span>
+              <span className="hidden md:inline">{isHi ? 'लॉगिन' : 'Login'}</span>
             </button>
           </div>
         </div>
@@ -726,7 +728,7 @@ export default function App() {
       </div>
 
       {/* Main Content Render */}
-      <main className="flex-1 py-3 sm:py-6 pb-28 sm:pb-8">
+      <main className="flex-1 py-3 sm:py-6 pb-4 sm:pb-8">
         {/* Mobile PWA Install Smart Banner */}
         <PWAInstallButton lang={lang} variant="mobile-banner" />
 
