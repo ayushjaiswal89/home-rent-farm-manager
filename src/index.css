@@ -52,6 +52,54 @@ body {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+img,
+video,
+canvas,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+@media (max-width: 767px) {
+  .app-header-controls {
+    gap: 0.25rem;
+  }
+
+  .app-header-install {
+    width: 2.25rem;
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .app-header-install span {
+    display: none;
+  }
+
+  .app-header-sync button {
+    padding-inline: 0.375rem;
+  }
+
+  .app-header-sync button > span {
+    display: none;
+  }
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

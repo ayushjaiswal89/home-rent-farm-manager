@@ -5,7 +5,7 @@ import { Plus, X, Save, Pencil, Trash2, ShoppingBag, Download, Printer, FileSpre
 
 import type { HomeExpense, Lang } from "../../lib/types";
 import { STRINGS } from "../../lib/i18n";
-import { fmt } from "../../lib/utils";
+import { fmt, getLocalDateString } from "../../lib/utils";
 import { exportCsvFile, generateCsvString } from "../../lib/csvExport";
 import { printFinancialReport } from "../../lib/pdfExport";
 import { exportToExcel } from "../../lib/excelExport";
@@ -37,7 +37,7 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
   const t = STRINGS[lang];
   const isHi = lang === "hi";
 
-  const getToday = () => new Date().toISOString().split("T")[0];
+  const getToday = () => getLocalDateString();
 
   const [form, setForm] = useState<HomeForm>({
     date: getToday(),
@@ -191,7 +191,7 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
     ]);
 
     const csvString = generateCsvString([headers, ...rows]);
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLocalDateString();
     await exportCsvFile({
       filename: `ghar-kharch-${todayStr}.csv`,
       csvString,
@@ -201,7 +201,7 @@ export function HomeSection({ records, setRecords, lang }: HomeSectionProps) {
 
   const exportHomeExcel = () => {
     if (records.length === 0) return;
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLocalDateString();
     exportToExcel({
       filename: `ghar-kharch-${todayStr}.xlsx`,
       lang,

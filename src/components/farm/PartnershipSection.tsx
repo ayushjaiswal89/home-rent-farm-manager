@@ -22,12 +22,13 @@ import {
   Download,
 } from 'lucide-react';
 import { Partner, PartnerCashEntry, FarmRecord, Lang, Khet } from '../../lib/types';
-import { fmt, formatDate } from '../../lib/utils';
+import { fmt, formatDate, getLocalDateString } from '../../lib/utils';
 import { FormCard } from '../common/UI';
 import { printFinancialReport, downloadFinancialReportPdf } from '../../lib/pdfExport';
 import { generatePartnerWhatsAppSummary } from '../../lib/whatsappSharing';
 import { WhatsAppShareModal } from './WhatsAppShareModal';
 import { calculateBataiSettlement, getRelationshipLabel } from '../../lib/bataiLogic';
+import { getCropSeasonForDate } from '../../lib/cropCycles';
 import { BataiSettlementExplainer } from './BataiSettlementExplainer';
 import { getRecordAmount, normalizeToQuintals } from '../../lib/farmAccounting';
 import { cropLabel } from '../../lib/farmI18n';
@@ -83,13 +84,13 @@ export function PartnershipSection({
     khetId: '',
     khetName: '',
     crop: 'Wheat',
-    season: 'Rabi 2026',
+    season: getCropSeasonForDate().shortEn,
     notes: '',
   });
 
   const [newCash, setNewCash] = useState({
     partnerId: selectedPartnerId || (partners[0]?.id || ''),
-    date: new Date().toISOString().slice(0, 10),
+    date: getLocalDateString(),
     type: 'gave_to_partner' as PartnerCashEntry['type'],
     purpose: 'advance' as 'advance' | 'settlement' | 'loan',
     amount: '',
@@ -132,7 +133,7 @@ export function PartnershipSection({
       khetName: newPartner.khetName.trim(),
       crop: newPartner.crop.trim(),
       season: newPartner.season.trim(),
-      startDate: new Date().toISOString().slice(0, 10),
+      startDate: getLocalDateString(),
       notes: newPartner.notes.trim(),
     };
     const updated = [...partners, created];
@@ -148,7 +149,7 @@ export function PartnershipSection({
       khetId: '',
       khetName: '',
       crop: 'Wheat',
-      season: 'Rabi 2026',
+      season: getCropSeasonForDate().shortEn,
       notes: '',
     });
   };
@@ -174,7 +175,7 @@ export function PartnershipSection({
 
     setNewCash({
       partnerId: activePartner.id,
-      date: new Date().toISOString().slice(0, 10),
+      date: getLocalDateString(),
       type: 'gave_to_partner',
       purpose: 'advance',
       amount: '',

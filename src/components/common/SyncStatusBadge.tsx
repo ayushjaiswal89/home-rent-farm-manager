@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff, RefreshCw, CheckCircle2, Database, Cloud, AlertCircle } from 'lucide-react';
 import { db } from '../../db/khatadb';
 import { syncEngine, type SyncState } from '../../services/syncService';
-import { auth } from '../../lib/firebase';
+import { auth, onAuthStateChanged } from '../../lib/firebase';
 import type { Lang } from '../../lib/types';
 
 interface SyncStatusBadgeProps {
@@ -30,7 +30,7 @@ export function SyncStatusBadge({ lang }: SyncStatusBadgeProps) {
     window.addEventListener('offline', handleOffline);
 
     // Track Firebase Auth user
-    const unsubAuth = auth.onAuthStateChanged((user) => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUserEmail(user?.email || null);
       if (user) {
         syncEngine.syncNow();

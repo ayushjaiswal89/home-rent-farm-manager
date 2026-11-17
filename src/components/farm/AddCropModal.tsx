@@ -5,6 +5,7 @@ import { X, Sprout, Plus, Check } from 'lucide-react';
 import { Khet, KhetCrop, Lang } from '../../lib/types';
 import { cropLabel } from '../../lib/farmI18n';
 import { getCropSeasonForDate } from '../../lib/cropCycles';
+import { getLocalDateString } from '../../lib/utils';
 import { POPULAR_CROPS } from './FarmForm';
 
 interface AddCropModalProps {
@@ -22,24 +23,24 @@ export function AddCropModal({
   lang,
   onSaveCrop,
 }: AddCropModalProps) {
-  if (!isOpen) return null;
   const isHi = lang === 'hi';
 
-  const [cropName, setCropName] = useState('Wheat');
+  const [cropName, setCropName] = useState(() => khet.crop || 'Wheat');
   const [customCrop, setCustomCrop] = useState('');
   const [allocatedArea, setAllocatedArea] = useState(() => {
     const currentCrops = khet.crops || [];
-    const usedArea = currentCrops.reduce((acc, c) => acc + (c.allocatedArea || 0), 0);
-    const remaining = Math.max(0.5, (khet.totalArea || khet.area || 1) - usedArea);
+    const usedArea = currentCrops.reduce((acc, c) => acc + (Number(c.allocatedArea) || 0), 0);
+    const remaining = Math.max(0, (khet.totalArea || khet.area || 0) - usedArea);
     return String(remaining);
   });
-  const [sowingDate, setSowingDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [season, setSeason] = useState(() => getCropSeasonForDate(new Date().toISOString().slice(0, 10)).shortHi);
+  const [sowingDate, setSowingDate] = useState(() => getLocalDateString());
+  const [season, setSeason] = useState(() => getCropSeasonForDate(getLocalDateString()).shortHi);
   const [harvestDate, setHarvestDate] = useState('');
   const [status, setStatus] = useState<KhetCrop['status']>('growing');
-  const [expectedYield, setExpectedYield] = useState('25');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
 
   const handleSowingDateChange = (val: string) => {
     setSowingDate(val);
@@ -65,11 +66,13 @@ export function AddCropModal({
     }
 
     const maxKhetArea = Number(khet.totalArea || khet.area || 0);
-    if (maxKhetArea > 0 && areaNum > maxKhetArea) {
+    const usedArea = (khet.crops || []).reduce((total, crop) => total + (Number(crop.allocatedArea) || 0), 0);
+    const remainingArea = Math.max(0, maxKhetArea - usedArea);
+    if (maxKhetArea > 0 && areaNum > remainingArea) {
       setError(
         isHi
-          ? `आवंटित रकबा (${areaNum}) खेत के कुल रकबे (${maxKhetArea} ${khet.areaUnit || 'बीघा'}) से अधिक नहीं हो सकता।`
-          : `Allocated area (${areaNum}) cannot exceed field total area (${maxKhetArea} ${khet.areaUnit || 'Bigha'}).`
+          ? `आवंटित रकबा (${areaNum}) उपलब्ध रकबे (${remainingArea} ${khet.areaUnit || 'बीघा'}) से अधिक नहीं हो सकता।`
+          : `Allocated area (${areaNum}) cannot exceed remaining area (${remainingArea} ${khet.areaUnit || 'Bigha'}).`
       );
       return;
     }
@@ -85,7 +88,6 @@ export function AddCropModal({
       allocatedArea: areaNum,
       areaUnit: khet.areaUnit || 'बीघा',
       status,
-      expectedYield: parseFloat(expectedYield) || undefined,
       notes: notes.trim() || undefined,
     };
 

@@ -25,6 +25,7 @@ import type { FarmRecord, Lang, Khet, KhetCrop, Partner } from '../../lib/types'
 import { cropLabel, isSameCrop } from '../../lib/farmI18n';
 import { formatDualArea, getLandSettings } from '../../lib/landMeasurement';
 import { parseVoiceInput } from '../../lib/voiceParser';
+import { getLocalDateString } from '../../lib/utils';
 import {
   getCropSeasonForDate,
   getRecentCropSeasons,
@@ -140,7 +141,7 @@ export function FarmForm({
         editingRecord.remainingAmount !== undefined
           ? String(editingRecord.remainingAmount)
           : String(Math.max(0, (parseFloat(amt) || 0) - (parseFloat(pd) || 0)));
-      const rDate = editingRecord.date || new Date().toISOString().slice(0, 10);
+      const rDate = editingRecord.date || getLocalDateString();
       return {
         date: rDate,
         khetId: editingRecord.khetId || '',
@@ -186,7 +187,7 @@ export function FarmForm({
     const defaultField = defaultPartnerObj?.khetName || defaultKhetObj?.name || '';
     const defaultPartnerId = defaultPartnerObj?.id || '';
     const defaultShare = defaultPartnerObj?.sharePercent !== undefined ? String(defaultPartnerObj.sharePercent) : '50';
-    const initDate = new Date().toISOString().slice(0, 10);
+    const initDate = getLocalDateString();
     const autoSeason = getCropSeasonForDate(initDate).shortHi;
 
     return {

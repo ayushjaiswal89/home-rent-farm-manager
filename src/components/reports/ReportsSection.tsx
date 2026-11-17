@@ -16,7 +16,9 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import type { FarmRecord, Lang, Khet, RentRecord, HomeExpense } from '../../lib/types';
-import { getRecordAmount } from '../../lib/farmAccounting';
+import { getRecordAmount, getSalePaidAmount } from '../../lib/farmAccounting';
+import { getRecentMonths } from '../../lib/utils';
+import { getRentPaidAmount, getRentRemainingAmount, getRentTotal } from '../../lib/rentAccounting';
 import { exportToExcel, exportToCsv } from '../../lib/excelExport';
 import { printFinancialReport, downloadFinancialReportPdf } from '../../lib/pdfExport';
 import {
@@ -53,15 +55,15 @@ export function ReportsSection({
   const [periodMode, setPeriodMode] = useState<'season' | 'month' | 'all'>('season');
 
   const seasons = useMemo(() => getRecentCropSeasons(6), []);
-  const [selectedSeasonIndex, setSelectedSeasonIndex] = useState<number>(0);
+  const [selectedSeasonIndex, setSelectedSeasonIndex] = useState<number>(() =>
+    Math.max(0, seasons.findIndex((season) => season.isCurrent))
+  );
   const activeSeason = seasons[selectedSeasonIndex] || seasons[0];
 
-  const monthNames = isHi
-    ? ['जुलाई 2026', 'अगस्त 2026', 'सितंबर 2026', 'अक्टूबर 2026', 'नवंबर 2026', 'दिसंबर 2026']
-    : ['July 2026', 'August 2026', 'September 2026', 'October 2026', 'November 2026', 'December 2026'];
-  const monthKeys = ['2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12'];
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(3); // October 2026
-  const curKey = monthKeys[selectedMonthIndex] || '';
+  const months = useMemo(() => getRecentMonths(6, lang), [lang]);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(months.length - 1);
+  const selectedMonth = months[selectedMonthIndex] || months[months.length - 1];
+  const curKey = selectedMonth?.key || '';
 
   const handlePrevPeriod = () => {
     if (periodMode === 'season') {
@@ -75,7 +77,7 @@ export function ReportsSection({
     if (periodMode === 'season') {
       setSelectedSeasonIndex((prev) => (prev > 0 ? prev - 1 : prev));
     } else if (periodMode === 'month') {
-      setSelectedMonthIndex((prev) => (prev < monthNames.length - 1 ? prev + 1 : prev));
+      setSelectedMonthIndex((prev) => (prev < months.length - 1 ? prev + 1 : prev));
     }
   };
 
@@ -111,7 +113,7 @@ export function ReportsSection({
       }
 
       if (r.type === 'Sale') {
-        const received = r.paidAmount !== undefined ? Number(r.paidAmount) : amt;
+        const received = getSalePaidAmount(r, amt);
         fInc += received;
         cropMap[cropName].sale += received;
         cropMap[cropName].net += received;
@@ -133,10 +135,9 @@ export function ReportsSection({
     let rInc = 0;
     let rPend = 0;
     periodRent.forEach((r) => {
-      const tot = Number(r.total) || 0;
-      const pd = r.paidAmount !== undefined ? Number(r.paidAmount) : (r.status === 'Received' ? tot : 0);
-      rInc += pd;
-      rPend += Math.max(0, tot - pd);
+      const total = getRentTotal(r);
+      rInc += getRentPaidAmount(r, total);
+      rPend += getRentRemainingAmount(r, total);
     });
 
     const periodHome = homeExpenses.filter((h) => {
@@ -227,9 +228,11 @@ export function ReportsSection({
       return;
     }
     const subtitleText = periodMode === 'season'
-      ? `${activeSeason.labelHi} (${activeSeason.monthsHi}) - 6-माह फसल चक्र रिपोर्ट`
+      ? isHi
+        ? `${activeSeason.labelHi} (${activeSeason.monthsHi}) - 6-माह फसल चक्र रिपोर्ट`
+        : `${activeSeason.labelEn} (${activeSeason.monthsEn}) - 6-month crop cycle report`
       : periodMode === 'month'
-      ? `${monthNames[selectedMonthIndex]} - कुल आय एवं व्यय विवरण`
+      ? `${selectedMonth?.label} - कुल आय एवं व्यय विवरण`
       : isHi ? 'संपूर्ण वित्तीय रिपोर्ट' : 'All-time Financial Report';
 
     try {
@@ -238,7 +241,7 @@ export function ReportsSection({
         title: isHi ? 'स्मार्ट खाता - संपूर्ण वित्तीय रिपोर्ट' : 'Smart Khata - Financial Report',
         subtitle: subtitleText,
         lang: isHi ? 'hi' : 'en',
-        season: periodMode === 'season' ? activeSeason.labelHi : undefined,
+        season: periodMode === 'season' ? (isHi ? activeSeason.labelHi : activeSeason.labelEn) : undefined,
         summaryCards: [
           { label: isHi ? 'कुल आय' : 'Total Income', value: money(totalIncome), color: '#16a34a' },
           { label: isHi ? 'कुल व्यय' : 'Total Expense', value: money(totalExpense), color: '#dc2626' },
@@ -424,15 +427,17 @@ export function ReportsSection({
             )}
             <span className="font-bold text-sm text-slate-900 dark:text-white">
               {periodMode === 'season'
-                ? activeSeason.labelHi
+                ? (isHi ? activeSeason.labelHi : activeSeason.labelEn)
                 : periodMode === 'month'
-                ? monthNames[selectedMonthIndex]
+                ? selectedMonth?.label
                 : isHi ? 'संपूर्ण रिकॉर्ड (All Time)' : 'All Time Records'}
             </span>
           </div>
           {periodMode === 'season' && (
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              {activeSeason.monthsHi} (साल में 2 फसलें - 6 माह चक्र)
+              {isHi
+                ? `${activeSeason.monthsHi} (साल में 2 फसलें - 6 माह चक्र)`
+                : `${activeSeason.monthsEn} (two 6-month crop cycles per year)`}
             </span>
           )}
         </div>
@@ -442,7 +447,7 @@ export function ReportsSection({
             periodMode === 'season'
               ? selectedSeasonIndex === 0
               : periodMode === 'month'
-              ? selectedMonthIndex === monthNames.length - 1
+              ? selectedMonthIndex === months.length - 1
               : true
           }
           className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-20 cursor-pointer"

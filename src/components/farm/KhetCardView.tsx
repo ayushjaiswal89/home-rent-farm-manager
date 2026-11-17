@@ -17,6 +17,7 @@ import { cropLabel } from '../../lib/farmI18n';
 import { calculateCropFinancials, calculateKhetFinancials } from '../../lib/farmAccounting';
 import { LandUnitSettings, formatDualArea } from '../../lib/landMeasurement';
 import { getCropSeasonForDate } from '../../lib/cropCycles';
+import { getLocalDateString } from '../../lib/utils';
 
 interface KhetCardViewProps {
   khet: Khet;
@@ -60,8 +61,8 @@ export function KhetCardView({
             khetId: khet.id,
             cropName: khet.crop || 'Wheat',
             cropNameHi: cropLabel(lang, khet.crop || 'Wheat'),
-            season: khet.season || getCropSeasonForDate(khet.sowingDate || new Date().toISOString().slice(0, 10)).shortHi,
-            sowingDate: khet.sowingDate || new Date().toISOString().slice(0, 10),
+            season: khet.season || getCropSeasonForDate(khet.sowingDate || getLocalDateString()).shortHi,
+            sowingDate: khet.sowingDate || getLocalDateString(),
             allocatedArea: khet.totalArea || khet.area || 1,
             areaUnit: khet.areaUnit || 'बीघा',
             status: 'growing',

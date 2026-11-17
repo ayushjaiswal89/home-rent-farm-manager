@@ -15,6 +15,7 @@ import type { Lang, FarmRecord, RentRecord, HomeExpense, Khet } from '../../lib/
 import { getCropSeasonForDate } from '../../lib/cropCycles';
 import { cropLabel, normalizeCropKey } from '../../lib/farmI18n';
 import { loadAndMigrateKhets } from '../../lib/storageMigration';
+import { getLocalDateString } from '../../lib/utils';
 
 interface UnifiedAddRecordModalProps {
   isOpen: boolean;
@@ -37,8 +38,6 @@ export function UnifiedAddRecordModal({
   onAddRentRecord,
   onAddHomeExpense,
 }: UnifiedAddRecordModalProps) {
-  if (!isOpen) return null;
-
   const isHi = lang === 'hi';
   const [activeTab, setActiveTab] = useState<'farm' | 'rent' | 'home'>('farm');
   React.useEffect(() => {
@@ -55,11 +54,11 @@ export function UnifiedAddRecordModal({
   });
 
   // Farm fields matching Screen 10
-  const [selectedKhet, setSelectedKhet] = useState(() => (khets[0]?.name || ''));
+  const [selectedKhet, setSelectedKhet] = useState(() => khets[0]?.name || '');
   const [selectedCrop, setSelectedCrop] = useState('');
   const [cost, setCost] = useState('');
   const [sale, setSale] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => getLocalDateString());
   const [note, setNote] = useState('');
 
   // Rent fields
@@ -70,13 +69,21 @@ export function UnifiedAddRecordModal({
   // Home expense fields
   const [homeCategory, setHomeCategory] = useState('राशन व किराना');
   const [homeAmount, setHomeAmount] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
 
     if (activeTab === 'farm') {
       const expenseAmt = parseFloat(cost) || 0;
       const saleAmt = parseFloat(sale) || 0;
+      if (expenseAmt <= 0 && saleAmt <= 0) {
+        setValidationError(isHi ? 'कृपया लागत या बिक्री राशि दर्ज करें।' : 'Enter a cost or sale amount.');
+        return;
+      }
       const detectedSeason = getCropSeasonForDate(date).shortHi;
       const matchedKhet = khets.find((k) => k.name.trim().toLowerCase() === selectedKhet.trim().toLowerCase());
       const defaultFieldCrop = matchedKhet?.crop ? cropLabel(lang, matchedKhet.crop) : (isHi ? 'गेहूं' : 'Wheat');
@@ -116,30 +123,49 @@ export function UnifiedAddRecordModal({
       }
     } else if (activeTab === 'rent' && onAddRentRecord) {
       const amt = parseFloat(rentAmount) || 0;
+      if (!tenantName.trim() || amt <= 0) {
+        setValidationError(isHi ? 'किरायेदार का नाम और सही किराया राशि दर्ज करें।' : 'Enter a tenant name and a valid rent amount.');
+        return;
+      }
+      const rentDate = new Date(`${date}T00:00:00`);
+      const month = Number.isNaN(rentDate.getTime())
+        ? ''
+        : rentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       onAddRentRecord({
         id: `rent-${Date.now()}`,
         date,
-        tenant: tenantName,
-        month: 'Oct 2026',
-        whatsapp: '9826112233',
+        tenant: tenantName.trim(),
+        month,
+        whatsapp: '',
         amount: amt,
-        prevReading: 1200,
-        currentReading: 1250,
-        ratePerUnit: 8,
-        units: 50,
-        lightBill: 400,
-        total: amt + 400,
-        paidAmount: amt + 400,
-        remainingAmount: 0,
-        status: 'Received',
-        note: roomNote,
+        prevReading: 0,
+        currentReading: 0,
+        ratePerUnit: 0,
+        units: 0,
+        lightBill: 0,
+        total: amt,
+        paidAmount: 0,
+        remainingAmount: amt,
+        status: 'Pending',
+        note: [roomNote.trim(), note.trim()].filter(Boolean).join(' - '),
       });
     } else if (activeTab === 'home' && onAddHomeExpense) {
       const amt = parseFloat(homeAmount) || 0;
+      if (amt <= 0) {
+        setValidationError(isHi ? 'कृपया सही खर्च राशि दर्ज करें।' : 'Enter a valid expense amount.');
+        return;
+      }
+      const categoryMap: Record<string, string> = {
+        'राशन व किराना': 'grocery',
+        'बिजली बिल': 'bills',
+        'दवाई': 'medical',
+        'शिक्षा': 'education',
+        'अन्य': 'other',
+      };
       onAddHomeExpense({
         id: `home-${Date.now()}`,
         date,
-        category: 'grocery',
+        category: categoryMap[homeCategory] || 'other',
         note: note.trim() || homeCategory,
         amount: amt,
       });
@@ -251,10 +277,7 @@ export function UnifiedAddRecordModal({
                       </option>
                     ))
                   ) : (
-                    <>
-                      <option value="खेत 1">खेत 1</option>
-                      <option value="खेत 2">खेत 2</option>
-                    </>
+                    null
                   )}
                 </select>
               </div>
@@ -316,6 +339,7 @@ export function UnifiedAddRecordModal({
                   </label>
                   <input
                     type="number"
+                    min="0"
                     value={cost}
                     onChange={(e) => setCost(e.target.value)}
                     placeholder={isHi ? "जैसे: 2500" : "e.g. 2500"}
@@ -328,6 +352,7 @@ export function UnifiedAddRecordModal({
                   </label>
                   <input
                     type="number"
+                    min="0"
                     value={sale}
                     onChange={(e) => setSale(e.target.value)}
                     placeholder={isHi ? "जैसे: 15000" : "e.g. 15000"}
@@ -346,6 +371,7 @@ export function UnifiedAddRecordModal({
                 </label>
                 <input
                   type="text"
+                  required
                   value={tenantName}
                   onChange={(e) => setTenantName(e.target.value)}
                   placeholder={isHi ? "किरायेदार का नाम दर्ज करें" : "Enter tenant name"}
@@ -370,6 +396,9 @@ export function UnifiedAddRecordModal({
                 </label>
                 <input
                   type="number"
+                  required
+                  min="0.01"
+                  step="0.01"
                   value={rentAmount}
                   onChange={(e) => setRentAmount(e.target.value)}
                   placeholder={isHi ? "जैसे: 5000" : "e.g. 5000"}
@@ -403,6 +432,9 @@ export function UnifiedAddRecordModal({
                 </label>
                 <input
                   type="number"
+                  required
+                  min="0.01"
+                  step="0.01"
                   value={homeAmount}
                   onChange={(e) => setHomeAmount(e.target.value)}
                   placeholder={isHi ? "जैसे: 1500" : "e.g. 1500"}
@@ -419,6 +451,7 @@ export function UnifiedAddRecordModal({
             </label>
             <input
               type="date"
+              required
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#07130e] text-slate-900 dark:text-white font-medium shadow-xs"
@@ -438,6 +471,12 @@ export function UnifiedAddRecordModal({
               className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#07130e] text-slate-900 dark:text-white font-medium shadow-xs"
             />
           </div>
+
+          {validationError && (
+            <p role="alert" className="text-sm font-semibold text-red-600 dark:text-red-400">
+              {validationError}
+            </p>
+          )}
 
           {/* Big Green Action Button: "सहेजें" matching Screen 10 */}
           <div className="pt-2">

@@ -24,12 +24,12 @@ export function WhatsAppShareModal({
   fullMessage,
   shortMessage,
 }: WhatsAppShareModalProps) {
-  if (!isOpen) return null;
-
   const isHi = lang === 'hi';
   const [phone, setPhone] = useState(defaultPhone);
   const [selectedFormat, setSelectedFormat] = useState<'full' | 'short'>('full');
   const [copied, setCopied] = useState(false);
+
+  if (!isOpen) return null;
 
   const activeMessage = selectedFormat === 'short' && shortMessage ? shortMessage : fullMessage;
 

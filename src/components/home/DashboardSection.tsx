@@ -28,11 +28,13 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import type { FarmRecord, HomeExpense, Lang, RentRecord, Partner, PartnerCashEntry, FarmTask, FarmerProfile } from '../../lib/types';
-import { getRecordAmount, normalizeToQuintals } from '../../lib/farmAccounting';
+import { getRecordAmount, getSalePaidAmount, getSaleRemainingAmount, normalizeToQuintals } from '../../lib/farmAccounting';
 import { cropLabel } from '../../lib/farmI18n';
 import { calculateBataiSettlement } from '../../lib/bataiLogic';
 import { getFarmerProfile, getFarmTasks, saveFarmTasks } from '../../lib/profileAndSecurity';
 import { FarmerAvatar } from '../common/FarmerAvatar';
+import { getLocalDateString } from '../../lib/utils';
+import { getRentPaidAmount, getRentRemainingAmount, getRentTotal } from '../../lib/rentAccounting';
 import { AppLogo } from '../common/AppLogo';
 import { getTaskCategoryIcon, getRelativeTimeBadge } from '../schedule/ScheduleSection';
 import {
@@ -95,7 +97,7 @@ export function DashboardSection({
   }, [isHi]);
 
   // Current Month String (YYYY-MM)
-  const currentMonthPrefix = useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const currentMonthPrefix = useMemo(() => getLocalDateString().slice(0, 7), []);
 
   // 6-Month Season Logic (2 crops per year: Kharif & Rabi)
   const recentSeasons = useMemo(() => getRecentCropSeasons(), []);
@@ -119,16 +121,17 @@ export function DashboardSection({
       if (r.type === 'Expense') {
         farmExpense += amt;
       } else if (r.type === 'Sale') {
-        farmIncome += (r.paidAmount !== undefined ? Number(r.paidAmount) : amt);
-        farmPending += (r.remainingAmount !== undefined ? Number(r.remainingAmount) : 0);
+        farmIncome += getSalePaidAmount(r, amt);
+        farmPending += getSaleRemainingAmount(r, amt);
       }
     });
 
     let rentReceived = 0;
     let rentPending = 0;
     rentRecords.forEach((r) => {
-      rentReceived += Number(r.paidAmount || 0);
-      rentPending += Number(r.remainingAmount || 0);
+      const total = getRentTotal(r);
+      rentReceived += getRentPaidAmount(r, total);
+      rentPending += getRentRemainingAmount(r, total);
     });
 
     let homeExp = 0;
@@ -228,7 +231,7 @@ export function DashboardSection({
   }, [records, rentRecords, homeExpenses, lang]);
 
   return (
-    <div className="max-w-[720px] mx-auto px-3 sm:px-4 space-y-4">
+    <div className="max-w-[720px] mx-auto px-3 sm:px-4 space-y-4 pb-24 sm:pb-0">
       {/* 1. Header Bar: Leaf Logo + Title + Subtitle + Avatar (Screen 3) */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-3">

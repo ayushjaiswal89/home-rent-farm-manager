@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { FarmTask, Lang, Khet } from '../../lib/types';
 import { saveFarmTasks } from '../../lib/profileAndSecurity';
+import { getLocalDateString } from '../../lib/utils';
 
 interface ScheduleSectionProps {
   tasks: FarmTask[];
@@ -98,9 +99,9 @@ export function ScheduleSection({ tasks, setTasks, khets = [], lang, onBack }: S
   // New task form state
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<FarmTask['category']>('irrigation');
-  const [khetName, setKhetName] = useState(khets[0]?.name || 'खेत 1');
+  const [khetName, setKhetName] = useState(khets[0]?.name || '');
   const [cropName, setCropName] = useState('गेहूं');
-  const [dueDate, setDueDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState(() => getLocalDateString());
   const [notes, setNotes] = useState('');
 
   const toggleTask = (id: string) => {

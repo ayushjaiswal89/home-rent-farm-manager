@@ -17,12 +17,12 @@ export function ResetDataModal({
   lang,
   onConfirmReset,
 }: ResetDataModalProps) {
-  if (!isOpen) return null;
-
   const isHi = lang === 'hi';
   const [resetMode, setResetMode] = useState<'sample' | 'clear'>('sample');
   const [confirmText, setConfirmText] = useState('');
   const [confirmedCheck, setConfirmedCheck] = useState(false);
+
+  if (!isOpen) return null;
 
   const canProceed = confirmedCheck && (confirmText.trim().toUpperCase() === 'RESET' || confirmText.trim() === 'रीसेट');
 
@@ -91,12 +91,12 @@ export function ResetDataModal({
               <RefreshCw size={16} className={resetMode === 'sample' ? 'text-emerald-500 mt-0.5' : 'mt-0.5'} />
               <div>
                 <div className="font-bold text-xs text-[var(--sk-text)]">
-                  {isHi ? 'आदर्श नमूना डेटा लोड करें (Restore Sample Data)' : 'Restore Default Sample Data'}
+                  {isHi ? 'रिकॉर्ड हटाएँ, प्रोफ़ाइल रखें' : 'Clear Ledgers, Keep Settings'}
                 </div>
                 <div className="text-[11px] text-[var(--sk-muted)] mt-0.5">
                   {isHi
-                    ? 'खेती, किराया व घर खर्च के शुरुआती आदर्श रिकॉर्ड वापस आ जाएंगे।'
-                    : 'Restores fresh demo transactions and field setups.'}
+                    ? 'सभी खाते खाली होंगे; प्रोफ़ाइल और ऐप सेटिंग्स सुरक्षित रहेंगी।'
+                    : 'Deletes existing records while keeping your profile and app settings.'}
                 </div>
               </div>
             </button>

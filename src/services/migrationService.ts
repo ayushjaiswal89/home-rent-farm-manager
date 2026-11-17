@@ -184,15 +184,15 @@ export async function migrateLocalStorageToIndexedDB(): Promise<MigrationSummary
         db.appSettings,
       ],
       async () => {
-        if (farmRecords.length > 0) await db.records.bulkPut(farmRecords);
-        if (khets.length > 0) await db.khets.bulkPut(khets);
-        if (crops.length > 0) await db.crops.bulkPut(crops);
-        if (partners.length > 0) await db.partners.bulkPut(partners);
-        if (partnerCash.length > 0) await db.partnerCash.bulkPut(partnerCash);
-        if (rentRecords.length > 0) await db.rentRecords.bulkPut(rentRecords);
-        if (homeExpenses.length > 0) await db.homeExpenses.bulkPut(homeExpenses);
-        if (stocks.length > 0) await db.stocks.bulkPut(stocks);
-        if (tasks.length > 0) await db.tasks.bulkPut(tasks);
+        if (farmRecords.length > 0 && await db.records.count() === 0) await db.records.bulkPut(farmRecords);
+        if (khets.length > 0 && await db.khets.count() === 0) await db.khets.bulkPut(khets);
+        if (crops.length > 0 && await db.crops.count() === 0) await db.crops.bulkPut(crops);
+        if (partners.length > 0 && await db.partners.count() === 0) await db.partners.bulkPut(partners);
+        if (partnerCash.length > 0 && await db.partnerCash.count() === 0) await db.partnerCash.bulkPut(partnerCash);
+        if (rentRecords.length > 0 && await db.rentRecords.count() === 0) await db.rentRecords.bulkPut(rentRecords);
+        if (homeExpenses.length > 0 && await db.homeExpenses.count() === 0) await db.homeExpenses.bulkPut(homeExpenses);
+        if (stocks.length > 0 && await db.stocks.count() === 0) await db.stocks.bulkPut(stocks);
+        if (tasks.length > 0 && await db.tasks.count() === 0) await db.tasks.bulkPut(tasks);
 
         // Save app settings
         if (rawProfile) {

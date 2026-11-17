@@ -1,7 +1,8 @@
 import * as XLSX from 'xlsx';
 import { FarmRecord, Khet, KhetCrop, Lang, Partner, PartnerCashEntry, RentRecord, HomeExpense } from './types';
 import { cropLabel } from './farmI18n';
-import { getRecordAmount } from './farmAccounting';
+import { getRecordAmount, getSalePaidAmount, getSaleRemainingAmount } from './farmAccounting';
+import { getRentPaidAmount, getRentRemainingAmount, getRentTotal } from './rentAccounting';
 
 export interface ExportExcelOptions {
   filename?: string;
@@ -98,9 +99,9 @@ export function exportToExcel(options: ExportExcelOptions): void {
     const qty = Number(r.quantity || 0);
     if (r.type === 'Sale') {
       totalSales += amt;
-      const paid = r.paidAmount !== undefined && r.paidAmount !== null ? Number(r.paidAmount) : amt;
+      const paid = getSalePaidAmount(r, amt);
       totalReceived += paid;
-      totalPending += r.remainingAmount !== undefined ? Number(r.remainingAmount) : Math.max(0, amt - paid);
+      totalPending += getSaleRemainingAmount(r, amt);
     } else if (r.type === 'Expense') {
       totalExpenses += amt;
     } else if (r.type === 'Yield') {
@@ -118,9 +119,9 @@ export function exportToExcel(options: ExportExcelOptions): void {
   let rentPending = 0;
   if (options.rentRecords && options.rentRecords.length > 0) {
     options.rentRecords.forEach((rr) => {
-      const amt = Number(rr.total || rr.amount || 0);
-      if (rr.status === 'Received') rentReceived += amt;
-      else rentPending += amt;
+      const total = getRentTotal(rr);
+      rentReceived += getRentPaidAmount(rr, total);
+      rentPending += getRentRemainingAmount(rr, total);
     });
   }
 
@@ -204,12 +205,8 @@ export function exportToExcel(options: ExportExcelOptions): void {
     const rawQty = typeof r.quantity === 'number' && !isNaN(r.quantity) ? r.quantity : '';
     const rawPrice = typeof r.price === 'number' && !isNaN(r.price) ? r.price : '';
     const rawAmount = getRecordAmount(r);
-    const rawPaid = typeof r.paidAmount === 'number' && !isNaN(r.paidAmount)
-      ? r.paidAmount
-      : (r.type === 'Sale' ? rawAmount : '');
-    const rawRemaining = typeof r.remainingAmount === 'number' && !isNaN(r.remainingAmount)
-      ? r.remainingAmount
-      : (r.type === 'Sale' && typeof rawPaid === 'number' ? Math.max(0, rawAmount - rawPaid) : '');
+    const rawPaid = r.type === 'Sale' ? getSalePaidAmount(r, rawAmount) : '';
+    const rawRemaining = r.type === 'Sale' ? getSaleRemainingAmount(r, rawAmount) : '';
 
     return [
       r.date || '',
@@ -320,7 +317,11 @@ export function exportToExcel(options: ExportExcelOptions): void {
       Number(rr.amount || 0),
       Number(rr.lightBill || 0),
       Number(rr.total || rr.amount || 0),
-      rr.status === 'Received' ? (isHi ? 'प्राप्त (Paid)' : 'Paid') : (isHi ? 'बाकी (Pending)' : 'Pending'),
+      rr.status === 'Received'
+        ? (isHi ? 'प्राप्त (Paid)' : 'Paid')
+        : rr.status === 'Partial'
+          ? (isHi ? 'आंशिक भुगतान' : 'Partially paid')
+          : (isHi ? 'बाकी (Pending)' : 'Pending'),
       rr.note || '',
     ]);
 
@@ -452,12 +453,8 @@ export function exportToCsv(options: ExportExcelOptions): void {
     const rawQty = typeof r.quantity === 'number' && !isNaN(r.quantity) ? r.quantity : '';
     const rawPrice = typeof r.price === 'number' && !isNaN(r.price) ? r.price : '';
     const rawAmount = getRecordAmount(r);
-    const rawPaid = typeof r.paidAmount === 'number' && !isNaN(r.paidAmount)
-      ? r.paidAmount
-      : (r.type === 'Sale' ? rawAmount : '');
-    const rawRemaining = typeof r.remainingAmount === 'number' && !isNaN(r.remainingAmount)
-      ? r.remainingAmount
-      : (r.type === 'Sale' && typeof rawPaid === 'number' ? Math.max(0, rawAmount - rawPaid) : '');
+    const rawPaid = r.type === 'Sale' ? getSalePaidAmount(r, rawAmount) : '';
+    const rawRemaining = r.type === 'Sale' ? getSaleRemainingAmount(r, rawAmount) : '';
 
     const cells = [
       r.date || '',

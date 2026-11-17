@@ -30,6 +30,8 @@ import { TASKS_STORAGE_KEY } from '../lib/profileAndSecurity';
 
 export type SyncState = 'idle' | 'syncing' | 'synced' | 'offline' | 'error';
 
+export const CLOUD_SYNCED_EVENT = 'sk-cloud-synced';
+
 class SyncEngine {
   private isSyncing = false;
   private listeners: ((state: SyncState, pendingCount: number) => void)[] = [];
@@ -63,6 +65,11 @@ class SyncEngine {
    */
   public async syncNow(): Promise<{ success: boolean; pushed: number; pulled: number; error?: string }> {
     if (this.isSyncing) return { success: false, pushed: 0, pulled: 0, error: 'Already syncing' };
+    if (!auth || !firestore) {
+      const pending = await db.syncQueue.count();
+      this.notify('idle', pending);
+      return { success: false, pushed: 0, pulled: 0, error: 'Firebase is not configured' };
+    }
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       this.notify('offline', await db.syncQueue.count());
       return { success: false, pushed: 0, pulled: 0, error: 'Offline' };
@@ -131,6 +138,10 @@ class SyncEngine {
       // 2. PULL: Download latest records from Cloud Firestore into IndexedDB
       pulledCount = await this.pullFromCloud(uid);
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event(CLOUD_SYNCED_EVENT));
+      }
+
       const remainingPending = await db.syncQueue.count();
       this.notify(remainingPending > 0 ? 'idle' : 'synced', remainingPending);
       return { success: true, pushed: pushedCount, pulled: pulledCount };
@@ -148,6 +159,10 @@ class SyncEngine {
    * Pulls all collections from Firestore under users/{uid} and merges via Last-Write-Wins
    */
   private async pullFromCloud(uid: string): Promise<number> {
+    if (!firestore) {
+      throw new Error('Firebase is not configured');
+    }
+
     let pulledCount = 0;
 
     // Helper for syncing a subcollection

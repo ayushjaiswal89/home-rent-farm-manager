@@ -5,6 +5,9 @@ import { Boxes, Plus, Warehouse, TrendingUp, Sparkles, AlertCircle, Trash2 } fro
 import { Lang, StockItem } from '../../lib/types';
 import { cropLabel } from '../../lib/farmI18n';
 import { POPULAR_CROPS } from '../farm/FarmForm';
+import { db } from '../../db/khatadb';
+import { syncCollectionToDb } from '../../services/khatadbService';
+import { getLocalDateString } from '../../lib/utils';
 
 interface StockSectionProps {
   lang: Lang;
@@ -23,30 +26,7 @@ export function StockSection({ lang, onNavigateToSale }: StockSectionProps) {
         } catch {}
       }
     }
-    return [
-      {
-        id: 'stock-1',
-        crop: 'Wheat',
-        quantity: 35,
-        unit: 'Quintal',
-        harvestDate: '2026-03-25',
-        khetName: 'बड़ा चक (उत्तर खेत)',
-        storageLocation: 'घर का गोदाम / कोठार',
-        expectedPrice: 2450,
-        notes: 'लोकवन ग्रेड A सूखा गेहूं',
-      },
-      {
-        id: 'stock-2',
-        crop: 'Garlic',
-        quantity: 12,
-        unit: 'Quintal',
-        harvestDate: '2026-03-10',
-        khetName: 'नहर वाला चक',
-        storageLocation: 'हवादार कमरा (जाली पर)',
-        expectedPrice: 9000,
-        notes: 'रियावन वैरायटी मोटा लहसुन',
-      },
-    ];
+    return [];
   });
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -65,6 +45,9 @@ export function StockSection({ lang, onNavigateToSale }: StockSectionProps) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('kisan-sathi-stocks', JSON.stringify(updated));
     }
+    syncCollectionToDb('stocks', db.stocks, updated).catch((error) => {
+      console.error('Stock persistence failed:', error);
+    });
   };
 
   const handleAddStock = (e: React.FormEvent) => {
@@ -77,7 +60,7 @@ export function StockSection({ lang, onNavigateToSale }: StockSectionProps) {
       crop: newStock.crop,
       quantity: q,
       unit: newStock.unit,
-      harvestDate: new Date().toISOString().slice(0, 10),
+      harvestDate: getLocalDateString(),
       khetName: newStock.khetName.trim() || undefined,
       storageLocation: newStock.storageLocation.trim() || undefined,
       expectedPrice: parseFloat(newStock.expectedPrice) || undefined,

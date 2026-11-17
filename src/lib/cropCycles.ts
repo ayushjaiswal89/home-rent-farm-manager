@@ -9,7 +9,7 @@
  */
 
 import { FarmRecord, Lang } from './types';
-import { getRecordAmount } from './farmAccounting';
+import { getRecordAmount, getSalePaidAmount } from './farmAccounting';
 import { cropLabel, normalizeCropKey } from './farmI18n';
 
 export type SeasonType = 'Kharif' | 'Rabi';
@@ -61,7 +61,12 @@ export const RABI_CROPS = [
  * Returns season details for any given date
  */
 export function getCropSeasonForDate(dateStr?: string): CropSeasonInfo {
-  const d = dateStr ? new Date(dateStr) : new Date();
+  const dateParts = dateStr?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const d = dateParts
+    ? new Date(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3]))
+    : dateStr
+      ? new Date(dateStr)
+      : new Date();
   const validDate = isNaN(d.getTime()) ? new Date() : d;
   const year = validDate.getFullYear();
   const month = validDate.getMonth() + 1; // 1 to 12
@@ -111,6 +116,18 @@ export function getCropSeasonForDate(dateStr?: string): CropSeasonInfo {
       isCurrent,
     };
   }
+}
+
+export function getPreviousCropSeason(dateStr?: string): CropSeasonInfo {
+  const currentSeason = getCropSeasonForDate(dateStr);
+  const [year, month] = currentSeason.startDate.split('-').map(Number);
+  const previousStart = new Date(year, month - 1 - 6, 1);
+  const previousDate = [
+    previousStart.getFullYear(),
+    String(previousStart.getMonth() + 1).padStart(2, '0'),
+    '01',
+  ].join('-');
+  return getCropSeasonForDate(previousDate);
 }
 
 /**
@@ -212,7 +229,7 @@ export function calculateCropSeasonAccounting(
       totalExpense += amt;
       cropWiseBreakdown[cropKey].expense += amt;
     } else if (r.type === 'Sale') {
-      const actualIncome = r.paidAmount !== undefined ? Number(r.paidAmount) : amt;
+      const actualIncome = getSalePaidAmount(r, amt);
       totalIncome += actualIncome;
       cropWiseBreakdown[cropKey].income += actualIncome;
     }

@@ -38,7 +38,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from '../../lib/firebase';
-import { syncEngine } from '../../services/syncService';
 
 interface AuthScreenProps {
   lang: Lang;
@@ -123,7 +122,6 @@ export function AuthScreen({
           localStorage.setItem('sk-is-logged-in', 'true');
         }
         // Pull latest records from cloud to local IndexedDB
-        syncEngine.syncNow().catch(console.warn);
         onLoginSuccess(freshProfile.name || cleanEmail.split('@')[0]);
       } catch (err: any) {
         console.error('Firebase login error:', err);
@@ -221,7 +219,6 @@ export function AuthScreen({
           localStorage.setItem('sk-is-logged-in', 'true');
         }
         // Sync local IndexedDB records to cloud
-        syncEngine.syncNow().catch(console.warn);
         onLoginSuccess(cleanName);
       } catch (err: any) {
         console.error('Firebase signup error:', err);

@@ -19,13 +19,14 @@ import {
 
 import { Lang, RentRecord, RentStatus } from "../../lib/types";
 import { STRINGS } from "../../lib/i18n";
-import { fmt } from "../../lib/utils";
+import { fmt, getLocalDateString } from "../../lib/utils";
 import { exportCsvFile, generateCsvString } from "../../lib/csvExport";
 import { printFinancialReport } from "../../lib/pdfExport";
 import { exportToExcel } from "../../lib/excelExport";
 import { shareViaWhatsApp } from "../../lib/whatsappSharing";
 import { FormCard, StatusBadge } from "../common/UI";
 import { ConfirmDeleteModal } from "../common/ConfirmDeleteModal";
+import { getRentPaidAmount, getRentRemainingAmount, getRentTotal } from "../../lib/rentAccounting";
 
 interface RentSectionProps {
   records: RentRecord[];
@@ -48,7 +49,7 @@ interface RentForm {
 }
 
 const EMPTY_FORM: RentForm = {
-  date: new Date().toISOString().slice(0, 10),
+  date: getLocalDateString(),
   tenant: "",
   month: "",
   whatsapp: "",
@@ -126,26 +127,12 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
     let partialCount = 0;
 
     for (const r of records) {
-      const tot = Number(r.total) || 0;
+      const tot = getRentTotal(r);
       total += tot;
 
-      if (r.status === "Received") {
-        const pd = r.paidAmount !== undefined ? Number(r.paidAmount) : tot;
-        received += pd;
-        pending += Math.max(0, tot - pd);
-      } else if (r.status === "Pending") {
-        const pd = r.paidAmount !== undefined ? Number(r.paidAmount) : 0;
-        received += pd;
-        const rem = r.remainingAmount !== undefined ? Number(r.remainingAmount) : Math.max(0, tot - pd);
-        pending += rem;
-      } else {
-        // Partial
-        partialCount++;
-        const pd = r.paidAmount !== undefined ? Number(r.paidAmount) : 0;
-        received += pd;
-        const rem = r.remainingAmount !== undefined ? Number(r.remainingAmount) : Math.max(0, tot - pd);
-        pending += rem;
-      }
+      received += getRentPaidAmount(r, tot);
+      pending += getRentRemainingAmount(r, tot);
+      if (r.status === "Partial") partialCount++;
     }
 
     return { total, received, pending, partial: partialCount };
@@ -153,7 +140,7 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
 
   const openAddForm = () => {
     setEditingId(null);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     setForm({
       ...EMPTY_FORM,
       date: today,
@@ -371,7 +358,7 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
     ]);
 
     const csvString = generateCsvString([headers, ...rows]);
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLocalDateString();
     await exportCsvFile({
       filename: `rent-report-${todayStr}.csv`,
       csvString,
@@ -382,7 +369,7 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
 
   const exportRentExcel = () => {
     if (filteredRecords.length === 0) return;
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLocalDateString();
     exportToExcel({
       filename: `rent-report-${todayStr}.xlsx`,
       lang,
@@ -628,7 +615,7 @@ export function RentSection({ records, setRecords, lang }: RentSectionProps) {
                   <input
                     value={form.month}
                     onChange={(e) => setForm((p) => ({ ...p, month: e.target.value }))}
-                    placeholder="Oct 2026"
+                    placeholder={getMonthName(getLocalDateString())}
                     className="w-full h-10 px-3 rounded-xl border border-[var(--sk-border)] bg-[var(--sk-card2)] text-xs text-[var(--sk-text)] outline-none"
                   />
                 </div>

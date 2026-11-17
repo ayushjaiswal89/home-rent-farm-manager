@@ -39,7 +39,7 @@ import { exportToExcel, exportToCsv } from '../../lib/excelExport';
 import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
 import {
   getCropSeasonForDate,
-  getRecentCropSeasons,
+  getPreviousCropSeason,
   isRecordInCropSeason,
 } from '../../lib/cropCycles';
 import {
@@ -55,7 +55,8 @@ import {
   LAND_SETTINGS_CHANGED_EVENT,
 } from '../../lib/landMeasurement';
 import { LandSettingsModal } from './LandSettingsModal';
-import { getRecordAmount, normalizeToQuintals } from '../../lib/farmAccounting';
+import { getRecordAmount, getSalePaidAmount, getSaleRemainingAmount, normalizeToQuintals } from '../../lib/farmAccounting';
+import { getLocalDateString } from '../../lib/utils';
 
 interface FarmSectionProps {
   records: FarmRecord[];
@@ -74,7 +75,7 @@ interface FarmSectionProps {
 const AREA_UNITS = ['बीघा', 'एकड़', 'हेक्टेयर'];
 
 function getToday() {
-  return new Date().toISOString().split('T')[0];
+  return getLocalDateString();
 }
 
 function money(value: number) {
@@ -209,7 +210,7 @@ export function FarmSection({
     name: '',
     crop: 'Wheat',
     customCrop: '',
-    area: '3',
+    area: '',
     areaUnit: 'बीघा',
     sowingDate: getToday(),
   });
@@ -290,8 +291,11 @@ export function FarmSection({
       return;
     }
 
-    const finalCrop =
-      newKhet.crop === 'Other' && newKhet.customCrop.trim() ? newKhet.customCrop.trim() : newKhet.crop;
+    const finalCrop = newKhet.crop === 'Other' ? newKhet.customCrop.trim() : newKhet.crop;
+    if (!finalCrop) {
+      setAddKhetError(isHi ? 'कृपया फसल चुनें या उसका नाम लिखें।' : 'Please select or enter a crop.');
+      return;
+    }
 
     const dynamicSeason = getCropSeasonForDate(newKhet.sowingDate || getToday()).shortHi;
     const khetId = `khet-${Date.now()}`;
@@ -305,7 +309,6 @@ export function FarmSection({
       allocatedArea: areaNum,
       areaUnit: newKhet.areaUnit,
       status: 'growing',
-      expectedYield: areaNum * 12,
     };
 
     const created: Khet = {
@@ -327,7 +330,7 @@ export function FarmSection({
       name: '',
       crop: 'Wheat',
       customCrop: '',
-      area: '3',
+      area: '',
       areaUnit: 'बीघा',
       sowingDate: getToday(),
     });
@@ -431,8 +434,8 @@ export function FarmSection({
       if (r.type === 'Sale') {
         const gross = getSaleAmount(r);
         income += gross;
-        const paid = r.paidAmount !== undefined ? Number(r.paidAmount) : gross;
-        const pending = r.remainingAmount !== undefined ? Number(r.remainingAmount) : Math.max(0, gross - paid);
+        const paid = getSalePaidAmount(r, gross);
+        const pending = getSaleRemainingAmount(r, gross);
         paymentReceived += paid;
         pendingPayment += pending;
       }
@@ -482,9 +485,8 @@ export function FarmSection({
         const curSeason = getCropSeasonForDate(today);
         if (!isRecordInCropSeason(r, curSeason)) return false;
       } else if (dateFilter === 'prev_season') {
-        const seasons = getRecentCropSeasons(2);
-        const prevSeason = seasons[1];
-        if (prevSeason && !isRecordInCropSeason(r, prevSeason)) return false;
+        const prevSeason = getPreviousCropSeason(today);
+        if (!isRecordInCropSeason(r, prevSeason)) return false;
       } else if (dateFilter === 'today' && r.date !== today) {
         return false;
       } else if (dateFilter === 'month' && !r.date.startsWith(thisMonth)) {
@@ -520,9 +522,9 @@ export function FarmSection({
       if (r.type === 'Sale') {
         const gross = getSaleAmount(r);
         sl += gross;
-        const p = r.paidAmount !== undefined ? Number(r.paidAmount) : gross;
+        const p = getSalePaidAmount(r, gross);
         paid += p;
-        pending += r.remainingAmount !== undefined ? Number(r.remainingAmount) : Math.max(0, gross - p);
+        pending += getSaleRemainingAmount(r, gross);
       }
       if (r.type === 'Yield') yld += Number(r.quantity || 0);
     });
@@ -546,7 +548,7 @@ export function FarmSection({
       const monthPrefix = `${curYear}-${String(idx + 1).padStart(2, '0')}`;
       const sales = records
         .filter((r) => r.type === 'Sale' && r.date.startsWith(monthPrefix))
-        .reduce((sum, r) => sum + (r.paidAmount !== undefined ? Number(r.paidAmount) : getSaleAmount(r)), 0);
+        .reduce((sum, r) => sum + getSalePaidAmount(r, getSaleAmount(r)), 0);
       const exps = records
         .filter((r) => r.type === 'Expense' && r.date.startsWith(monthPrefix))
         .reduce((sum, r) => sum + getExpenseAmount(r), 0);
@@ -1145,6 +1147,16 @@ export function FarmSection({
                     </option>
                   ))}
                 </select>
+                {newKhet.crop === 'Other' && (
+                  <input
+                    type="text"
+                    value={newKhet.customCrop}
+                    onChange={(e) => setNewKhet((c) => ({ ...c, customCrop: e.target.value }))}
+                    placeholder={isHi ? 'फसल का नाम लिखें' : 'Enter crop name'}
+                    required
+                    className="w-full h-10 mt-2 px-3 rounded-xl border border-[var(--sk-border)] bg-[var(--sk-card2)] text-sm text-[var(--sk-text)] outline-none focus:border-emerald-500"
+                  />
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

@@ -21,11 +21,11 @@ export function EditProfileModal({
   profile,
   onSave,
 }: EditProfileModalProps) {
-  if (!isOpen) return null;
-
   const isHi = lang === 'hi';
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<FarmerProfile>({ ...profile });
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

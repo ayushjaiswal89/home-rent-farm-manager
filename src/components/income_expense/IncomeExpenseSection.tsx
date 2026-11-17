@@ -17,8 +17,9 @@ import {
   Maximize2,
 } from 'lucide-react';
 import type { FarmRecord, Lang } from '../../lib/types';
-import { getRecordAmount } from '../../lib/farmAccounting';
+import { getRecordAmount, getSalePaidAmount } from '../../lib/farmAccounting';
 import { cropLabel } from '../../lib/farmI18n';
+import { getRecentMonths } from '../../lib/utils';
 
 interface IncomeExpenseSectionProps {
   records: FarmRecord[];
@@ -39,23 +40,21 @@ export function IncomeExpenseSection({
 }: IncomeExpenseSectionProps) {
   const isHi = lang === 'hi';
   const [viewTab, setViewTab] = useState<'summary' | 'transactions' | 'category'>('summary');
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(3); // October 2026
-
-  const monthNames = isHi
-    ? ['जुलाई 2026', 'अगस्त 2026', 'सितंबर 2026', 'अक्टूबर 2026']
-    : ['July 2026', 'August 2026', 'September 2026', 'October 2026'];
-
-  const shortMonthLabels = isHi
-    ? ['जुल', 'अग', 'सित', 'अक्टू']
-    : ['Jul', 'Aug', 'Sep', 'Oct'];
+  const months = useMemo(() => getRecentMonths(4, lang), [lang]);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(months.length - 1);
+  const selectedMonth = months[selectedMonthIndex] || months[months.length - 1];
+  const selectedRecords = useMemo(
+    () => records.filter((r) => !!r.date && r.date.startsWith(selectedMonth?.key || '')),
+    [records, selectedMonth]
+  );
 
   // Real computations from user records
   const { totalIncome, totalExpense, netSavings } = useMemo(() => {
     let inc = 0;
     let exp = 0;
-    records.forEach((r) => {
+    selectedRecords.forEach((r) => {
       const amt = getRecordAmount(r);
-      if (r.type === 'Sale') inc += (r.paidAmount !== undefined ? Number(r.paidAmount) : amt);
+      if (r.type === 'Sale') inc += getSalePaidAmount(r, amt);
       else if (r.type === 'Expense') exp += amt;
     });
     return {
@@ -63,34 +62,27 @@ export function IncomeExpenseSection({
       totalExpense: exp,
       netSavings: inc - exp,
     };
-  }, [records]);
+  }, [selectedRecords]);
 
   // Compute real monthly chart data from records
   const monthlyChartData = useMemo(() => {
-    const curYear = new Date().getFullYear();
-    const months = [
-      { key: `${curYear}-07`, label: shortMonthLabels[0] },
-      { key: `${curYear}-08`, label: shortMonthLabels[1] },
-      { key: `${curYear}-09`, label: shortMonthLabels[2] },
-      { key: `${curYear}-10`, label: shortMonthLabels[3] },
-    ];
     return months.map((m) => {
       let inc = 0;
       let exp = 0;
       records.forEach((r) => {
         if (r.date && r.date.startsWith(m.key)) {
           const amt = getRecordAmount(r);
-          if (r.type === 'Sale') inc += (r.paidAmount !== undefined ? Number(r.paidAmount) : amt);
+          if (r.type === 'Sale') inc += getSalePaidAmount(r, amt);
           else if (r.type === 'Expense') exp += amt;
         }
       });
-      return { label: m.label, inc, exp };
+      return { label: m.shortLabel, inc, exp };
     });
-  }, [records, shortMonthLabels]);
+  }, [records, months]);
 
   // Dynamic category breakdown from real expense records
   const categoryBreakdown = useMemo(() => {
-    const expenseRecs = records.filter((r) => r.type === 'Expense');
+    const expenseRecs = selectedRecords.filter((r) => r.type === 'Expense');
     const map = new Map<string, number>();
     let expSum = 0;
     expenseRecs.forEach((r) => {
@@ -109,7 +101,7 @@ export function IncomeExpenseSection({
         pct: Math.round((amt / expSum) * 100),
         color: colors[idx % colors.length],
       }));
-  }, [records, isHi]);
+  }, [selectedRecords, isHi]);
 
   const getTransactionIcon = (r: FarmRecord) => {
     if (r.type === 'Sale') {
@@ -139,7 +131,7 @@ export function IncomeExpenseSection({
   };
 
   const handleNextMonth = () => {
-    setSelectedMonthIndex((prev) => (prev < monthNames.length - 1 ? prev + 1 : prev));
+    setSelectedMonthIndex((prev) => (prev < months.length - 1 ? prev + 1 : prev));
   };
 
   return (
@@ -212,7 +204,7 @@ export function IncomeExpenseSection({
         </button>
       </div>
 
-      {/* Month Navigator matching Screen 7: < अक्टूबर 2026 > */}
+      {/* Month Navigator */}
       <div className="flex items-center justify-between p-2.5 rounded-2xl bg-white dark:bg-[#0c1a13] border border-slate-200 dark:border-[#1e3c2c] mb-3 shadow-xs">
         <button
           onClick={handlePrevMonth}
@@ -224,12 +216,12 @@ export function IncomeExpenseSection({
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-emerald-600 dark:text-emerald-400" />
           <span className="font-bold text-sm text-slate-900 dark:text-white">
-            {monthNames[selectedMonthIndex]}
+            {selectedMonth?.label}
           </span>
         </div>
         <button
           onClick={handleNextMonth}
-          disabled={selectedMonthIndex === monthNames.length - 1}
+          disabled={selectedMonthIndex === months.length - 1}
           className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 cursor-pointer"
         >
           <ChevronRight size={20} />
@@ -332,7 +324,7 @@ export function IncomeExpenseSection({
               <p className="text-slate-500 text-sm">{isHi ? 'कोई रिकॉर्ड नहीं मिला' : 'No records found'}</p>
             </div>
           ) : (
-            records.map((r) => {
+            selectedRecords.map((r) => {
               const { icon: TransIcon, bg: iconBg } = getTransactionIcon(r);
               const amt = getRecordAmount(r);
               const isSale = r.type === 'Sale';

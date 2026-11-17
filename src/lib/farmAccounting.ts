@@ -61,6 +61,17 @@ export function getRecordAmount(record: FarmRecord): number {
   return Number.isFinite(savedAmount) ? savedAmount : 0;
 }
 
+export function getSalePaidAmount(record: FarmRecord, amount = getRecordAmount(record)): number {
+  if (record.paidAmount === undefined || record.paidAmount === null) return Math.max(0, amount);
+  const paid = Number(record.paidAmount);
+  return Math.min(Math.max(0, Number.isFinite(paid) ? paid : 0), Math.max(0, amount));
+}
+
+export function getSaleRemainingAmount(record: FarmRecord, amount = getRecordAmount(record)): number {
+  const paid = getSalePaidAmount(record, amount);
+  return Math.max(0, amount - paid);
+}
+
 export function calculateCropFinancials(
   records: FarmRecord[],
   crop: KhetCrop,
@@ -95,12 +106,9 @@ export function calculateCropFinancials(
       totalExpense += amount;
     } else if (r.type === 'Sale') {
       totalSales += amount;
-      const rawPaid = r.paidAmount !== undefined && r.paidAmount !== null ? Number(r.paidAmount) : amount;
-      const paid = Math.min(Math.max(0, Number.isFinite(rawPaid) ? rawPaid : 0), Math.max(0, amount));
+      const paid = getSalePaidAmount(r, amount);
       paymentReceived += paid;
-      const rawPending = r.remainingAmount !== undefined && r.remainingAmount !== null ? Number(r.remainingAmount) : amount - paid;
-      const pending = Math.min(Math.max(0, Number.isFinite(rawPending) ? rawPending : amount - paid), Math.max(0, amount - paid));
-      pendingDue += pending;
+      pendingDue += getSaleRemainingAmount(r, amount);
       soldYieldQuintal += normalizeToQuintals(qty, r.unit);
     } else if (r.type === 'Yield') {
       harvestedYieldQuintal += normalizeToQuintals(qty, r.unit);
@@ -149,12 +157,9 @@ export function calculateKhetFinancials(
       totalExpense += amount;
     } else if (r.type === 'Sale') {
       totalSales += amount;
-      const rawPaid = r.paidAmount !== undefined && r.paidAmount !== null ? Number(r.paidAmount) : amount;
-      const paid = Math.min(Math.max(0, Number.isFinite(rawPaid) ? rawPaid : 0), Math.max(0, amount));
+      const paid = getSalePaidAmount(r, amount);
       paymentReceived += paid;
-      const rawPending = r.remainingAmount !== undefined && r.remainingAmount !== null ? Number(r.remainingAmount) : amount - paid;
-      const pending = Math.min(Math.max(0, Number.isFinite(rawPending) ? rawPending : amount - paid), Math.max(0, amount - paid));
-      pendingDue += pending;
+      pendingDue += getSaleRemainingAmount(r, amount);
       totalSoldYieldQuintal += normalizeToQuintals(qty, r.unit);
     } else if (r.type === 'Yield') {
       totalHarvestYieldQuintal += normalizeToQuintals(qty, r.unit);

@@ -6,7 +6,8 @@ import { FarmRecord, Lang, Khet, KhetCrop } from '../../lib/types';
 import { FarmTranslation, cropLabel, isSameCrop } from '../../lib/farmI18n';
 import { exportToExcel, exportToCsv } from '../../lib/excelExport';
 import { getRecordAmount } from '../../lib/farmAccounting';
-import { getCropSeasonForDate, getRecentCropSeasons } from '../../lib/cropCycles';
+import { getCropSeasonForDate, getPreviousCropSeason } from '../../lib/cropCycles';
+import { getLocalDateString } from '../../lib/utils';
 
 export type FarmDateFilter = 'all' | 'current_season' | 'prev_season' | 'today' | 'month' | 'year';
 
@@ -56,7 +57,7 @@ export function FarmFilters({
   const handleExportExcel = () => {
     const recordsToExport = filteredRecords.length > 0 ? filteredRecords : allRecords;
     if (recordsToExport.length === 0) return;
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLocalDateString();
     const cropSuffix = selectedCropTab !== 'all' ? `-${selectedCropTab}` : '';
 
     exportToExcel({
@@ -71,7 +72,7 @@ export function FarmFilters({
   const handleExportCsv = () => {
     const recordsToExport = filteredRecords.length > 0 ? filteredRecords : allRecords;
     if (recordsToExport.length === 0) return;
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLocalDateString();
     const cropSuffix = selectedCropTab !== 'all' ? `-${selectedCropTab}` : '';
 
     exportToCsv({
@@ -83,9 +84,8 @@ export function FarmFilters({
     });
   };
 
-  const recentSeasons = getRecentCropSeasons(2);
-  const currentSeason = recentSeasons[0] || getCropSeasonForDate(new Date().toISOString().slice(0, 10));
-  const prevSeason = recentSeasons[1] || null;
+  const currentSeason = getCropSeasonForDate();
+  const prevSeason = getPreviousCropSeason();
 
   const allTypes = lang === 'hi' ? 'सभी प्रकार' : 'All Types';
   const allDates = lang === 'hi' ? 'सभी रिकॉर्ड (All)' : 'All Records';
@@ -194,13 +194,13 @@ export function FarmFilters({
             <option value="current_season">
               {lang === 'hi'
                 ? `चालू फसल: ${currentSeason.shortHi}`
-                : `Current Season: ${currentSeason.shortHi}`}
+                : `Current Season: ${currentSeason.shortEn}`}
             </option>
             {prevSeason && (
               <option value="prev_season">
                 {lang === 'hi'
                   ? `पिछली फसल: ${prevSeason.shortHi}`
-                  : `Previous Season: ${prevSeason.shortHi}`}
+                  : `Previous Season: ${prevSeason.shortEn}`}
               </option>
             )}
             <option value="month">{thisMonth}</option>

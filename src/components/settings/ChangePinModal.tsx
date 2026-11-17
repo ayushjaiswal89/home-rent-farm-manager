@@ -20,8 +20,6 @@ export function ChangePinModal({
   currentPinHash,
   onSavePin,
 }: ChangePinModalProps) {
-  if (!isOpen) return null;
-
   const isHi = lang === 'hi';
   const hasExistingPin = Boolean(currentPinHash || (currentPin && currentPin.length >= 4));
 
@@ -29,6 +27,8 @@ export function ChangePinModal({
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

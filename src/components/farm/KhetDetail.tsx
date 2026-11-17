@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import type { FarmRecord, Lang, Khet, KhetCrop, Partner } from '../../lib/types';
 import { cropLabel, unitLabel, isSameCrop, normalizeCropKey } from '../../lib/farmI18n';
-import { getRecordAmount, normalizeToQuintals } from '../../lib/farmAccounting';
+import { getRecordAmount, getSalePaidAmount, getSaleRemainingAmount, normalizeToQuintals } from '../../lib/farmAccounting';
 import { FarmForm, POPULAR_CROPS } from './FarmForm';
 import { PrintReportModal } from './PrintReportModal';
 import { exportToExcel } from '../../lib/excelExport';
@@ -39,6 +39,7 @@ import {
 } from '../../lib/landMeasurement';
 import { LandSettingsModal } from './LandSettingsModal';
 import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
+import { getLocalDateString } from '../../lib/utils';
 
 interface KhetDetailProps {
   lang: Lang;
@@ -140,12 +141,9 @@ export function KhetDetail({
         totalExpense += amt;
       } else if (record.type === 'Sale') {
         totalSales += amt;
-        const paid = record.paidAmount !== undefined && record.paidAmount !== null ? Number(record.paidAmount) : amt;
+        const paid = getSalePaidAmount(record, amt);
         paymentReceived += paid;
-        const pending = record.remainingAmount !== undefined && record.remainingAmount !== null
-          ? Number(record.remainingAmount)
-          : Math.max(0, amt - paid);
-        pendingPayment += pending;
+        pendingPayment += getSaleRemainingAmount(record, amt);
       } else if (record.type === 'Yield') {
         const qtl = normalizeToQuintals(qty, record.unit);
         totalYieldQuintal += qtl;
@@ -205,7 +203,7 @@ export function KhetDetail({
       lang,
       records: allFieldRecords,
       khets: [khet],
-      filename: `${khet.name}-khata-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      filename: `${khet.name}-khata-${getLocalDateString()}.xlsx`,
     });
   };
 

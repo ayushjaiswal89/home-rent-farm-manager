@@ -4,6 +4,8 @@ import { FarmRecord, Khet, KhetCrop, Lang } from '../../lib/types';
 import { cropLabel } from '../../lib/farmI18n';
 import { exportToExcel, exportToCsv } from '../../lib/excelExport';
 import { downloadPrintableHtml, exportElementToPdf, printElement } from '../../lib/pdfExport';
+import { getSalePaidAmount, getSaleRemainingAmount } from '../../lib/farmAccounting';
+import { getLocalDateString } from '../../lib/utils';
 
 interface PrintReportModalProps {
   isOpen: boolean;
@@ -72,10 +74,9 @@ export function PrintReportModal({
       totalYieldQtl += q;
     } else if (r.type === 'Sale') {
       totalSales += amt;
-      const paid = r.paidAmount !== undefined ? Number(r.paidAmount) : amt;
+      const paid = getSalePaidAmount(r, amt);
       totalReceived += paid;
-      const pending = r.remainingAmount !== undefined ? Number(r.remainingAmount) : Math.max(0, amt - paid);
-      totalPending += pending;
+      totalPending += getSaleRemainingAmount(r, amt);
     }
   });
 
@@ -109,7 +110,7 @@ export function PrintReportModal({
     try {
       setIsGeneratingPdf(true);
       const khetLabel = selectedKhetObj?.name ? selectedKhetObj.name.replace(/[/\\?%*:|"<> ]/g, '-') : 'khet';
-      const cleanFileName = `khet-hisab-${khetLabel}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const cleanFileName = `khet-hisab-${khetLabel}-${getLocalDateString()}.pdf`;
       await exportElementToPdf(printAreaRef.current, cleanFileName);
       showNotice(isHi ? '✓ PDF फ़ाइल सफलतापूर्वक तैयार व डाउनलोड हो गई' : '✓ PDF statement successfully downloaded');
     } catch (err) {
@@ -127,7 +128,7 @@ export function PrintReportModal({
       records: filteredRecords,
       khets,
       khetCrops,
-      filename: `kheti-excel-${khetLabel}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      filename: `kheti-excel-${khetLabel}-${getLocalDateString()}.xlsx`,
     });
     showNotice(isHi ? '✓ Excel (.xlsx) बहीखाता डाउनलोड हो गया' : '✓ Excel (.xlsx) workbook downloaded');
   };
@@ -139,7 +140,7 @@ export function PrintReportModal({
       records: filteredRecords,
       khets,
       khetCrops,
-      filename: `kheti-records-${khetLabel}-${new Date().toISOString().slice(0, 10)}.csv`,
+      filename: `kheti-records-${khetLabel}-${getLocalDateString()}.csv`,
     });
     showNotice(isHi ? '✓ CSV फ़ाइल सफलतापूर्वक डाउनलोड हो गई' : '✓ CSV records downloaded');
   };
