@@ -151,6 +151,7 @@ export function downloadPhysicalBackup(): void {
       rentRecords: getParsedStorage('sk-rent-records', []),
       homeExpenses: getParsedStorage('sk-home-expenses', []),
       stocks: getParsedStorage('kisan-sathi-stocks', []),
+      tasks: getParsedStorage('sk-farm-tasks', []),
       landSettings: getParsedStorage('sk-land-settings', null),
       farmerProfile: getParsedStorage('sk-farmer-profile', null),
       appName: localStorage.getItem('sk-app-name') || 'स्मार्ट खाता',

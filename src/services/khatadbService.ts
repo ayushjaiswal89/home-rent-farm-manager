@@ -132,7 +132,10 @@ export async function syncCollectionToDb<T extends { id: string; updatedAt?: num
           prevSnap.set(row.id, serializeWithoutSyncMeta(row as Record<string, any>));
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error(`Could not read ${tableName} before persistence:`, err);
+      throw err;
+    }
     collectionSnapshots.set(tableName, prevSnap);
   }
 
@@ -161,9 +164,8 @@ export async function syncCollectionToDb<T extends { id: string; updatedAt?: num
     }
   }
 
-  collectionSnapshots.set(tableName, nextSnap);
-
   if (toPut.length === 0 && toDelete.length === 0) {
+    collectionSnapshots.set(tableName, nextSnap);
     return false;
   }
 
@@ -187,6 +189,8 @@ export async function syncCollectionToDb<T extends { id: string; updatedAt?: num
     }
   });
 
+  collectionSnapshots.set(tableName, nextSnap);
+
   if (!options.skipQueue) {
     scheduleAutoSync();
   }
@@ -197,30 +201,29 @@ export async function syncCollectionToDb<T extends { id: string; updatedAt?: num
 export async function initStorageEngine(): Promise<void> {
   if (typeof window === 'undefined') return;
   try {
-    const tableCounts = await Promise.all([
-      db.records.count(),
-      db.khets.count(),
-      db.crops.count(),
-      db.partners.count(),
-      db.partnerCash.count(),
-      db.rentRecords.count(),
-      db.homeExpenses.count(),
-      db.stocks.count(),
-      db.tasks.count(),
-    ]);
+    const storageManager = navigator.storage;
+    if (storageManager?.persist) {
+      try {
+        if (!(await storageManager.persist())) {
+          console.warn('Browser did not grant persistent storage; local data may be cleared by browser storage management.');
+        }
+      } catch (err) {
+        console.warn('Could not request persistent browser storage:', err);
+      }
+    }
+
     const legacyCollections = [
-      { key: RECORDS_STORAGE_KEY, count: tableCounts[0] },
-      { key: KHETS_STORAGE_KEY, count: tableCounts[1] },
-      { key: CROPS_STORAGE_KEY, count: tableCounts[2] },
-      { key: PARTNERS_STORAGE_KEY, count: tableCounts[3] },
-      { key: PARTNER_CASH_STORAGE_KEY, count: tableCounts[4] },
-      { key: RENT_STORAGE_KEY, count: tableCounts[5] },
-      { key: HOME_STORAGE_KEY, count: tableCounts[6] },
-      { key: STOCKS_STORAGE_KEY, count: tableCounts[7] },
-      { key: TASKS_STORAGE_KEY, count: tableCounts[8] },
+      RECORDS_STORAGE_KEY,
+      KHETS_STORAGE_KEY,
+      CROPS_STORAGE_KEY,
+      PARTNERS_STORAGE_KEY,
+      PARTNER_CASH_STORAGE_KEY,
+      RENT_STORAGE_KEY,
+      HOME_STORAGE_KEY,
+      STOCKS_STORAGE_KEY,
+      TASKS_STORAGE_KEY,
     ];
-    const hasUnmigratedData = legacyCollections.some(({ key, count }) => {
-      if (count > 0) return false;
+    const hasLocalDataToReconcile = legacyCollections.some((key) => {
       try {
         const parsed = JSON.parse(localStorage.getItem(key) || 'null');
         return Array.isArray(parsed) && parsed.length > 0;
@@ -229,7 +232,7 @@ export async function initStorageEngine(): Promise<void> {
       }
     });
 
-    if (hasUnmigratedData) {
+    if (hasLocalDataToReconcile) {
       const summary = await migrateLocalStorageToIndexedDB();
       if (!summary.success) {
         throw new Error(summary.error || 'Local data migration failed');

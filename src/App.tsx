@@ -54,6 +54,7 @@ import {
 } from './lib/profileAndSecurity';
 import { AppLogo } from './components/common/AppLogo';
 import { PWAInstallButton } from './components/common/PWAInstallButton';
+import { SyncStatusBadge } from './components/common/SyncStatusBadge';
 import { initStorageEngine, registerAutoSyncCallback, syncCollectionToDb } from './services/khatadbService';
 import { CLOUD_SYNCED_EVENT, syncEngine } from './services/syncService';
 import { STOCKS_STORAGE_KEY } from './services/migrationService';
@@ -477,74 +478,6 @@ export default function App() {
       document.documentElement.setAttribute('data-theme', theme);
     }
   }, [theme]);
-
-  // Purge any legacy cached demo entries from localStorage on initial load
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const DEMO_IDS = new Set([
-      'rec-1', 'rec-2', 'rec-3', 'rec-4', 'rec-5',
-      'rent-1', 'rent-2',
-      'home-1', 'home-2', 'home-3',
-      'khet-1', 'khet-2',
-      'p-1', 'p-2',
-      'pc-1', 'pc-2',
-      'task-1', 'task-2', 'task-3',
-    ]);
-
-    setRecords((prev) => {
-      const filtered = prev.filter((r) => !DEMO_IDS.has(r.id));
-      if (filtered.length !== prev.length) {
-        localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(filtered));
-        return filtered;
-      }
-      return prev;
-    });
-
-    setRentRecords((prev) => {
-      const filtered = prev.filter((r) => !DEMO_IDS.has(r.id));
-      if (filtered.length !== prev.length) {
-        localStorage.setItem(RENT_STORAGE_KEY, JSON.stringify(filtered));
-        return filtered;
-      }
-      return prev;
-    });
-
-    setHomeExpenses((prev) => {
-      const filtered = prev.filter((h) => !DEMO_IDS.has(h.id));
-      if (filtered.length !== prev.length) {
-        localStorage.setItem(HOME_STORAGE_KEY, JSON.stringify(filtered));
-        return filtered;
-      }
-      return prev;
-    });
-
-    setPartners((prev) => {
-      const filtered = prev.filter((p) => !DEMO_IDS.has(p.id));
-      if (filtered.length !== prev.length) {
-        localStorage.setItem(PARTNERS_STORAGE_KEY, JSON.stringify(filtered));
-        return filtered;
-      }
-      return prev;
-    });
-
-    setPartnerCash((prev) => {
-      const filtered = prev.filter((pc) => !DEMO_IDS.has(pc.id));
-      if (filtered.length !== prev.length) {
-        localStorage.setItem(PARTNER_CASH_STORAGE_KEY, JSON.stringify(filtered));
-        return filtered;
-      }
-      return prev;
-    });
-
-    setTasks((prev) => {
-      const filtered = prev.filter((t) => !DEMO_IDS.has(t.id));
-      if (filtered.length !== prev.length) {
-        localStorage.setItem('sk-farm-tasks', JSON.stringify(filtered));
-        return filtered;
-      }
-      return prev;
-    });
-  }, [storageReady]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));

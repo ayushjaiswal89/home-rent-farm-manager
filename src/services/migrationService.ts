@@ -1,4 +1,5 @@
 import { db } from '../db/khatadb';
+import type { Table } from 'dexie';
 import type {
   FarmRecord,
   Khet,
@@ -44,6 +45,35 @@ export interface MigrationSummary {
   tasksCount: number;
   profileMigrated: boolean;
   error?: string;
+}
+
+function mergeRows<T extends { id: string; updatedAt?: number }>(
+  existingRows: T[],
+  localRows: T[],
+  tableName: string,
+  pendingDeletes: Set<string>
+): T[] {
+  const merged = new Map<string, T>();
+
+  for (const row of existingRows) {
+    if (!pendingDeletes.has(`${tableName}:${row.id}`)) {
+      merged.set(row.id, row);
+    }
+  }
+
+  for (const row of localRows) {
+    if (pendingDeletes.has(`${tableName}:${row.id}`)) {
+      merged.delete(row.id);
+      continue;
+    }
+
+    const existing = merged.get(row.id);
+    if (!existing || (Number(row.updatedAt) || 0) >= (Number(existing.updatedAt) || 0)) {
+      merged.set(row.id, row);
+    }
+  }
+
+  return [...merged.values()];
 }
 
 function safeParseArray<T>(key: string): T[] {
@@ -182,17 +212,42 @@ export async function migrateLocalStorageToIndexedDB(): Promise<MigrationSummary
         db.stocks,
         db.tasks,
         db.appSettings,
+        db.syncQueue,
       ],
       async () => {
-        if (farmRecords.length > 0 && await db.records.count() === 0) await db.records.bulkPut(farmRecords);
-        if (khets.length > 0 && await db.khets.count() === 0) await db.khets.bulkPut(khets);
-        if (crops.length > 0 && await db.crops.count() === 0) await db.crops.bulkPut(crops);
-        if (partners.length > 0 && await db.partners.count() === 0) await db.partners.bulkPut(partners);
-        if (partnerCash.length > 0 && await db.partnerCash.count() === 0) await db.partnerCash.bulkPut(partnerCash);
-        if (rentRecords.length > 0 && await db.rentRecords.count() === 0) await db.rentRecords.bulkPut(rentRecords);
-        if (homeExpenses.length > 0 && await db.homeExpenses.count() === 0) await db.homeExpenses.bulkPut(homeExpenses);
-        if (stocks.length > 0 && await db.stocks.count() === 0) await db.stocks.bulkPut(stocks);
-        if (tasks.length > 0 && await db.tasks.count() === 0) await db.tasks.bulkPut(tasks);
+        const pendingDeletes = new Set(
+          (await db.syncQueue.toArray())
+            .filter((item) => item.action === 'delete')
+            .map((item) => `${item.tableName}:${item.recordId}`)
+        );
+
+        const mergeCollection = async <T extends { id: string; updatedAt?: number }>(
+          table: Table<T, string>,
+          rows: T[],
+          tableName: string
+        ) => {
+          const existingRows = await table.toArray();
+          const mergedRows = mergeRows(existingRows, rows, tableName, pendingDeletes);
+          if (mergedRows.length > 0) {
+            await table.bulkPut(mergedRows);
+          }
+          const deletedIds = existingRows
+            .filter((row) => pendingDeletes.has(`${tableName}:${row.id}`))
+            .map((row) => row.id);
+          if (deletedIds.length > 0) {
+            await table.bulkDelete(deletedIds);
+          }
+        };
+
+        await mergeCollection(db.records, farmRecords, 'records');
+        await mergeCollection(db.khets, khets, 'khets');
+        await mergeCollection(db.crops, crops, 'crops');
+        await mergeCollection(db.partners, partners, 'partners');
+        await mergeCollection(db.partnerCash, partnerCash, 'partnerCash');
+        await mergeCollection(db.rentRecords, rentRecords, 'rentRecords');
+        await mergeCollection(db.homeExpenses, homeExpenses, 'homeExpenses');
+        await mergeCollection(db.stocks, stocks, 'stocks');
+        await mergeCollection(db.tasks, tasks, 'tasks');
 
         // Save app settings
         if (rawProfile) {

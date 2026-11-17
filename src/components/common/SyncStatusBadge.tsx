@@ -48,7 +48,9 @@ export function SyncStatusBadge({ lang }: SyncStatusBadgeProps) {
       try {
         const count = await db.syncQueue.count();
         setPendingCount(count);
-      } catch {}
+      } catch (error) {
+        console.warn('Could not read pending sync count:', error);
+      }
     };
     checkCount();
     const timer = setInterval(checkCount, 5000);
@@ -109,8 +111,16 @@ export function SyncStatusBadge({ lang }: SyncStatusBadgeProps) {
           </>
         ) : (
           <>
-            <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400" />
-            <span>{isHi ? 'क्लाउड सुरक्षित' : 'Synced'}</span>
+            {currentUserEmail ? (
+              <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <Database size={13} className="text-emerald-600 dark:text-emerald-400" />
+            )}
+            <span>
+              {currentUserEmail
+                ? (isHi ? 'क्लाउड सुरक्षित' : 'Synced')
+                : (isHi ? 'डिवाइस में सुरक्षित' : 'On device')}
+            </span>
           </>
         )}
       </button>
@@ -123,10 +133,12 @@ export function SyncStatusBadge({ lang }: SyncStatusBadgeProps) {
             <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-[#1a3525]">
               <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <Database size={14} className="text-emerald-600" />
-                {isHi ? 'क्लाउड सिंक स्थिति' : 'Cloud Sync Status'}
+                {currentUserEmail
+                  ? (isHi ? 'क्लाउड सिंक स्थिति' : 'Cloud Sync Status')
+                  : (isHi ? 'स्थानीय डेटा स्थिति' : 'Local Data Status')}
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                Firebase Firestore
+                {currentUserEmail ? 'Firebase Firestore' : (isHi ? 'स्थानीय डिवाइस' : 'Local device')}
               </span>
             </div>
 
@@ -148,7 +160,9 @@ export function SyncStatusBadge({ lang }: SyncStatusBadgeProps) {
               <div className="flex items-center justify-between">
                 <span>{isHi ? 'लंबित रिकॉर्ड' : 'Pending'}:</span>
                 <span className="font-mono font-bold">
-                  {pendingCount === 0
+                  {!currentUserEmail
+                    ? (isHi ? 'क्लाउड सिंक बंद' : 'Cloud sync off')
+                    : pendingCount === 0
                     ? (isHi ? 'सभी सिंक हैं ✅' : 'All synced ✅')
                     : `${pendingCount} ${isHi ? 'रिकॉर्ड बाकी' : 'queued'}`}
                 </span>
@@ -157,9 +171,13 @@ export function SyncStatusBadge({ lang }: SyncStatusBadgeProps) {
 
             <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 leading-relaxed border-t border-slate-100 dark:border-[#1a3525]">
               {!isOnline
-                ? (isHi
-                    ? 'इंटरनेट बंद है। आपका डेटा स्थानीय IndexedDB में सुरक्षित है। इंटरनेट आने पर Firebase Cloud में सिंक होगा।'
-                    : 'Offline. Records are stored locally in IndexedDB and will auto-sync to Firebase Cloud when connected.')
+                ? currentUserEmail
+                  ? (isHi
+                      ? 'इंटरनेट बंद है। डेटा IndexedDB में सुरक्षित है और ऑनलाइन होने पर Firebase Cloud से सिंक होगा।'
+                      : 'Offline. Data is stored in IndexedDB and will sync with Firebase Cloud when online.')
+                  : (isHi
+                      ? 'इंटरनेट बंद है। डेटा केवल इस डिवाइस के IndexedDB में है; क्लाउड बैकअप के लिए ईमेल से लॉगिन करें।'
+                      : 'Offline. Data is only in this device’s IndexedDB; sign in with email to enable cloud backup.')
                 : currentUserEmail
                 ? (isHi
                     ? 'आपका डेटा Firebase Firestore Cloud में पूरी तरह सुरक्षित है।'

@@ -171,37 +171,33 @@ class SyncEngine {
       dexieTable: any,
       localStorageKey: string
     ) => {
-      try {
-        const snap = await getDocs(collection(firestore, 'users', uid, collectionName));
-        if (snap.empty) return;
+      const snap = await getDocs(collection(firestore, 'users', uid, collectionName));
+      if (snap.empty) return;
 
-        const remoteDocs: T[] = [];
-        snap.forEach((d) => {
-          remoteDocs.push(d.data() as T);
-        });
+      const remoteDocs: T[] = [];
+      snap.forEach((d) => {
+        remoteDocs.push(d.data() as T);
+      });
 
-        for (const remote of remoteDocs) {
-          const local = await dexieTable.get(remote.id);
-          const remoteTime = remote.updatedAt || 0;
-          const localTime = local?.updatedAt || 0;
+      for (const remote of remoteDocs) {
+        const local = await dexieTable.get(remote.id);
+        const remoteTime = remote.updatedAt || 0;
+        const localTime = local?.updatedAt || 0;
 
-          // Conflict resolution: Last-Write-Wins
-          if (!local || remoteTime >= localTime) {
-            if (remote.isDeleted) {
-              await dexieTable.delete(remote.id);
-            } else {
-              await dexieTable.put(remote);
-            }
-            pulledCount++;
+        // Conflict resolution: Last-Write-Wins
+        if (!local || remoteTime >= localTime) {
+          if (remote.isDeleted) {
+            await dexieTable.delete(remote.id);
+          } else {
+            await dexieTable.put(remote);
           }
+          pulledCount++;
         }
-
-        // Mirror latest state to LocalStorage
-        const allLocal = await dexieTable.toArray();
-        localStorage.setItem(localStorageKey, JSON.stringify(allLocal));
-      } catch (colErr) {
-        console.warn(`[SyncEngine] Pull failed for ${collectionName}:`, colErr);
       }
+
+      // Mirror latest state to LocalStorage
+      const allLocal = await dexieTable.toArray();
+      localStorage.setItem(localStorageKey, JSON.stringify(allLocal));
     };
 
     await syncCollection<FarmRecord>('records', db.records, RECORDS_STORAGE_KEY);
